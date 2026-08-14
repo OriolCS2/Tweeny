@@ -111,6 +111,29 @@ namespace Tweeny
         void ReleaseReferences();
 
         /// <summary>
+        /// Hands the tween over to a sequence. A nested tween stops being driven by the scheduler, loses
+        /// its own delay and auto-kill, and is locked against further configuration.
+        /// </summary>
+        void PrepareAsSequenced();
+
+        /// <summary>
+        /// The span this tween occupies inside a sequence, which is one loop times its loop count.
+        /// </summary>
+        /// <returns>Returns the occupied time in seconds.</returns>
+        float GetSequencedSpan() const;
+
+        /// <summary>
+        /// Whether the tween plays from its end value towards the target's original one.
+        /// </summary>
+        /// <returns>Returns true for a From tween.</returns>
+        bool IsFromTween() const;
+
+        /// <summary>
+        /// Makes the tween safe to run inside the editor: manual updates only, no callbacks, no auto-kill.
+        /// </summary>
+        void PrepareForPreview();
+
+        /// <summary>
         /// Copies the project-wide defaults onto a freshly created tween. Called once, at creation.
         /// </summary>
         /// <param name="ease">The default easing curve.</param>

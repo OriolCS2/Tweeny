@@ -15,6 +15,7 @@ namespace Tweeny
     class TweenyManager
     {
         private array<ITween@> tweens;
+        private array<TweenLink@> links;
         private bool ticking = false;
         private bool needsSweep = false;
 
@@ -63,6 +64,8 @@ namespace Tweeny
             float scaled = deltaTime * globalTimeScale;
             float unscaled = unscaledDeltaTime * unscaledTimeScale * globalTimeScale;
 
+            EvaluateLinks();
+
             ticking = true;
             uint count = tweens.length();
             for (uint i = 0; i < count; i++) {
@@ -109,6 +112,38 @@ namespace Tweeny
                     tweens.removeLast();
                     continue;
                 }
+                i++;
+            }
+        }
+
+        /// <summary>
+        /// Registers a link so the manager starts watching its entity.
+        /// </summary>
+        /// <param name="link">The link to track.</param>
+        void AddLink(TweenLink@ link)
+        {
+            if (link !is null) {
+                links.insertLast(link);
+            }
+        }
+
+        /// <summary>
+        /// Applies every live link and drops the ones whose tween has gone.
+        /// </summary>
+        void EvaluateLinks()
+        {
+            uint i = 0;
+            while (i < links.length()) {
+                TweenLink@ link = links[i];
+                if (link is null || !link.IsAlive()) {
+                    uint last = links.length() - 1;
+                    if (i != last) {
+                        @links[i] = links[last];
+                    }
+                    links.removeLast();
+                    continue;
+                }
+                link.Evaluate();
                 i++;
             }
         }

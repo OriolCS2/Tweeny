@@ -36,6 +36,39 @@ namespace TweenyTests
         ColorSetter@ Setter() { return ColorSetter(this.Set); }
     }
 
+    class IntProbe
+    {
+        int value = 0;
+        IntProbe() {}
+        IntProbe(int initial) { value = initial; }
+        int Get() { return value; }
+        void Set(int v) { value = v; }
+        IntGetter@ Getter() { return IntGetter(this.Get); }
+        IntSetter@ Setter() { return IntSetter(this.Set); }
+    }
+
+    class StringProbe
+    {
+        string value = "";
+        StringProbe() {}
+        StringProbe(const string&in initial) { value = initial; }
+        string Get() { return value; }
+        void Set(const string&in v) { value = v; }
+        StringGetter@ Getter() { return StringGetter(this.Get); }
+        StringSetter@ Setter() { return StringSetter(this.Set); }
+    }
+
+    class RectProbe
+    {
+        Rectf value;
+        RectProbe() {}
+        RectProbe(Rectf initial) { value = initial; }
+        Rectf Get() { return value; }
+        void Set(Rectf v) { value = v; }
+        RectGetter@ Getter() { return RectGetter(this.Get); }
+        RectSetter@ Setter() { return RectSetter(this.Set); }
+    }
+
     /// <summary>
     /// Verifies every value type interpolates correctly, including the cases where an overshooting ease
     /// pushes the parameter outside 0..1.
@@ -237,6 +270,113 @@ namespace TweenyTests
             t.CheckApprox(col.value.a, 0.5f, "the alpha tween advanced");
             t.CheckApprox(angle.value, 45.0f, "the angle tween advanced");
             ResetManager();
+        }
+
+        t.Case("int counts through the whole range");
+        {
+            IntProbe probe(0);
+            TweenInt@ tween = TweenInt();
+            tween.Bind(probe.Getter(), probe.Setter(), 100, 1.0f);
+            tween.SetEase(Ease::Linear);
+            tween.Play();
+            Advance(tween, 0.25f, 1);
+            t.CheckEqualInt(probe.value, 25, "a quarter of the way");
+            Advance(tween, 0.25f, 1);
+            t.CheckEqualInt(probe.value, 50, "halfway");
+            Advance(tween, 0.5f, 1);
+            t.CheckEqualInt(probe.value, 100, "all the way");
+        }
+
+        t.Case("int counts down as well as up");
+        {
+            IntProbe probe(10);
+            TweenInt@ tween = TweenInt();
+            tween.Bind(probe.Getter(), probe.Setter(), 0, 1.0f);
+            tween.SetEase(Ease::Linear);
+            tween.Play();
+            Advance(tween, 0.5f, 1);
+            t.CheckEqualInt(probe.value, 5, "halfway down");
+            Advance(tween, 0.5f, 1);
+            t.CheckEqualInt(probe.value, 0, "reaches zero");
+        }
+
+        t.Case("string reveals its characters over time");
+        {
+            StringProbe probe("");
+            TweenString@ tween = TweenString();
+            tween.Bind(probe.Getter(), probe.Setter(), "abcdefghij", 1.0f);
+            tween.SetEase(Ease::Linear);
+            tween.Play();
+            Advance(tween, 0.5f, 1);
+            t.CheckEqualString(probe.value, "abcde", "half the characters are shown");
+            Advance(tween, 0.5f, 1);
+            t.CheckEqualString(probe.value, "abcdefghij", "the whole string is shown at the end");
+        }
+
+        t.Case("string keeps its final width while scrambling");
+        {
+            StringProbe probe("");
+            TweenString@ tween = TweenString();
+            tween.Bind(probe.Getter(), probe.Setter(), "abcdefghij", 1.0f);
+            tween.SetEase(Ease::Linear).SetScramble(ScrambleMode::Uppercase).SetScrambleSeed(12345);
+            tween.Play();
+            Advance(tween, 0.5f, 1);
+            t.CheckEqualInt(int(probe.value.length()), 10, "the width is already final");
+            t.CheckEqualString(probe.value.substr(0, 5), "abcde", "the revealed part is correct");
+            bool tailIsUppercase = true;
+            for (uint i = 5; i < probe.value.length(); i++) {
+                string ch = probe.value.substr(i, 1);
+                if (ch < "A" || ch > "Z") {
+                    tailIsUppercase = false;
+                }
+            }
+            t.Check(tailIsUppercase, "the scrambled tail comes from the chosen character set");
+            Advance(tween, 0.5f, 1);
+            t.CheckEqualString(probe.value, "abcdefghij", "scrambling stops once everything is revealed");
+        }
+
+        t.Case("a seeded scramble replays identically");
+        {
+            StringProbe first("");
+            TweenString@ a = TweenString();
+            a.Bind(first.Getter(), first.Setter(), "abcdefghij", 1.0f);
+            a.SetEase(Ease::Linear).SetScramble(ScrambleMode::All).SetScrambleSeed(999);
+            a.Play();
+            Advance(a, 0.4f, 1);
+
+            StringProbe second("");
+            TweenString@ b = TweenString();
+            b.Bind(second.Getter(), second.Setter(), "abcdefghij", 1.0f);
+            b.SetEase(Ease::Linear).SetScramble(ScrambleMode::All).SetScrambleSeed(999);
+            b.Play();
+            Advance(b, 0.4f, 1);
+
+            t.CheckEqualString(first.value, second.value, "the same seed produces the same scramble");
+        }
+
+        t.Case("string relative appends to what is already there");
+        {
+            StringProbe probe("Hello ");
+            TweenString@ tween = TweenString();
+            tween.Bind(probe.Getter(), probe.Setter(), "world", 1.0f);
+            tween.SetEase(Ease::Linear).SetRelative(true);
+            tween.Play();
+            Advance(tween, 1.0f, 1);
+            t.CheckEqualString(probe.value, "Hello world", "the new text was appended");
+        }
+
+        t.Case("rect interpolates all four components");
+        {
+            RectProbe probe(Rectf(0.0f, 0.0f, 0.0f, 0.0f));
+            TweenRect@ tween = TweenRect();
+            tween.Bind(probe.Getter(), probe.Setter(), Rectf(10.0f, 20.0f, 30.0f, 40.0f), 1.0f);
+            tween.SetEase(Ease::Linear);
+            tween.Play();
+            Advance(tween, 0.5f, 1);
+            t.CheckApprox(probe.value.x, 5.0f, "x is halfway");
+            t.CheckApprox(probe.value.y, 10.0f, "y is halfway");
+            t.CheckApprox(probe.value.w, 15.0f, "width is halfway");
+            t.CheckApprox(probe.value.h, 20.0f, "height is halfway");
         }
     }
 }

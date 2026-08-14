@@ -96,12 +96,12 @@ namespace Tweeny
 
         private Color Add(const Color&in a, const Color&in b)
         {
-            return Color(a.r + b.r, a.g + b.g, a.b + b.b, a.a + b.a);
+            return CometEngine::Color(a.r + b.r, a.g + b.g, a.b + b.b, a.a + b.a);
         }
 
         private Color Subtract(const Color&in a, const Color&in b)
         {
-            return Color(a.r - b.r, a.g - b.g, a.b - b.b, a.a - b.a);
+            return CometEngine::Color(a.r - b.r, a.g - b.g, a.b - b.b, a.a - b.a);
         }
 
         void TweenReleaseReferences()

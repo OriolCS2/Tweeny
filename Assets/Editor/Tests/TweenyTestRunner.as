@@ -45,5 +45,10 @@ class TweenyTestRunner : EditorBehaviour
         TweenyTests::RunCoreTests(context);
         TweenyTests::RunSchedulerTests(context);
         TweenyTests::RunValueTypeTests(context);
+        TweenyTests::RunSequenceTests(context);
+        TweenyTests::RunSpecialTests(context);
+        TweenyTests::RunShortcutTests(context);
+        TweenyTests::RunIntegrationTests(context);
+        TweenyTests::RunPreviewTests(context);
     }
 }

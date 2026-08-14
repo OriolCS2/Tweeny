@@ -224,6 +224,13 @@ namespace Tweeny
         return Manager().Collect(FilterType::All, null, "", -999, true);
     }
 
+    /// <summary>Every live tween, playing or paused. Used by the editor tooling.</summary>
+    /// <returns>Returns all active tweens.</returns>
+    array<ITween@>@ AllTweens()
+    {
+        return Manager().Collect(FilterType::All, null, "", -999, false);
+    }
+
     // =================================================================================================
     // Creation
     // =================================================================================================
@@ -307,7 +314,7 @@ namespace Tweeny
     TweenColor@ ToAlpha(ColorGetter@ getter, ColorSetter@ setter, float toAlpha, float duration)
     {
         TweenColor@ tween = TweenColor();
-        tween.Bind(getter, setter, Color(0.0f, 0.0f, 0.0f, toAlpha), duration);
+        tween.Bind(getter, setter, CometEngine::Color(0.0f, 0.0f, 0.0f, toAlpha), duration);
         tween.SetAlphaOnly(true);
         ApplyDefaults(tween);
         Register(tween);
@@ -329,6 +336,102 @@ namespace Tweeny
         ApplyDefaults(tween);
         Register(tween);
         return tween;
+    }
+
+    /// <summary>
+    /// Animates a whole number between its current value and a target value.
+    /// </summary>
+    /// <param name="getter">Reads the current value.</param>
+    /// <param name="setter">Writes the new value.</param>
+    /// <param name="to">The value to reach.</param>
+    /// <param name="duration">How long one loop takes, in seconds.</param>
+    /// <returns>Returns the tween so settings can be chained onto it.</returns>
+    TweenInt@ To(IntGetter@ getter, IntSetter@ setter, int to, float duration)
+    {
+        TweenInt@ tween = TweenInt();
+        tween.Bind(getter, setter, to, duration);
+        ApplyDefaults(tween);
+        Register(tween);
+        return tween;
+    }
+
+    /// <summary>
+    /// Types a string out over time.
+    /// </summary>
+    /// <param name="getter">Reads the current text.</param>
+    /// <param name="setter">Writes the new text.</param>
+    /// <param name="to">The text to end up with.</param>
+    /// <param name="duration">How long one loop takes, in seconds.</param>
+    /// <returns>Returns the tween so settings can be chained onto it.</returns>
+    TweenString@ To(StringGetter@ getter, StringSetter@ setter, const string&in to, float duration)
+    {
+        TweenString@ tween = TweenString();
+        tween.Bind(getter, setter, to, duration);
+        ApplyDefaults(tween);
+        Register(tween);
+        return tween;
+    }
+
+    /// <summary>
+    /// Animates a rectangle between its current value and a target value.
+    /// </summary>
+    /// <param name="getter">Reads the current value.</param>
+    /// <param name="setter">Writes the new value.</param>
+    /// <param name="to">The value to reach.</param>
+    /// <param name="duration">How long one loop takes, in seconds.</param>
+    /// <returns>Returns the tween so settings can be chained onto it.</returns>
+    TweenRect@ To(RectGetter@ getter, RectSetter@ setter, Rectf to, float duration)
+    {
+        TweenRect@ tween = TweenRect();
+        tween.Bind(getter, setter, to, duration);
+        ApplyDefaults(tween);
+        Register(tween);
+        return tween;
+    }
+
+    /// <summary>
+    /// Ties a tween's life to an entity, so it stops, restarts or dies along with it.
+    ///
+    /// Whatever behaviour is chosen, a destroyed entity always kills the tween: that guard is not optional.
+    /// </summary>
+    /// <param name="tween">The tween to control.</param>
+    /// <param name="entity">The entity to watch.</param>
+    /// <param name="behaviour">What to do when the entity is enabled or disabled.</param>
+    void SetLink(ITween@ tween, Entity@ entity, LinkBehaviour behaviour = LinkBehaviour::KillOnDestroy)
+    {
+        if (tween is null || entity is null) {
+            return;
+        }
+        Manager().AddLink(TweenLink(tween, entity, behaviour));
+    }
+
+    /// <summary>
+    /// Creates an empty sequence ready to be composed.
+    /// </summary>
+    /// <returns>Returns the sequence so tweens can be chained onto it.</returns>
+    TweenSequence@ Sequence()
+    {
+        TweenSequence@ sequence = TweenSequence();
+        TweenyManager@ manager = Manager();
+        sequence.CoreSetAutoKill(manager.defaultAutoKill);
+        sequence.CoreSetUpdate(manager.defaultUpdateType, manager.defaultTimeScaleIndependent);
+        Register(sequence);
+        if (manager.defaultAutoPlay == AutoPlay::All || manager.defaultAutoPlay == AutoPlay::AutoPlaySequences) {
+            sequence.Play();
+        }
+        return sequence;
+    }
+
+    /// <summary>
+    /// Creates an empty sequence bound to a target, so filtered operations can find it later.
+    /// </summary>
+    /// <param name="target">The object the sequence is considered to animate.</param>
+    /// <returns>Returns the sequence so tweens can be chained onto it.</returns>
+    TweenSequence@ Sequence(Object@ target)
+    {
+        TweenSequence@ sequence = Sequence();
+        sequence.SetTarget(target);
+        return sequence;
     }
 
     /// <summary>

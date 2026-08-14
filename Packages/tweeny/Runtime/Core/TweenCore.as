@@ -733,6 +733,59 @@ namespace Tweeny
             timeScale = value;
         }
 
+        /// <summary>Whether the tween plays from its end value towards the target's original one.</summary>
+        /// <returns>Returns true for a From tween.</returns>
+        bool IsFromTween() const { return isFrom; }
+
+        /// <summary>
+        /// Makes the tween safe to run inside the editor.
+        ///
+        /// Callbacks are cleared because a preview must never fire game logic, and auto-kill is turned off
+        /// because the preview needs the tween to still be there when it stops so it can rewind it.
+        /// </summary>
+        void PrepareForPreview()
+        {
+            updateType = UpdateType::Manual;
+            independentUpdate = true;
+            autoKill = false;
+            @onStart = null;
+            @onPlay = null;
+            @onPause = null;
+            @onRewind = null;
+            @onUpdate = null;
+            @onStepComplete = null;
+            @onComplete = null;
+            @onKill = null;
+            @onWaypointChange = null;
+        }
+
+        /// <summary>
+        /// Hands the tween over to a sequence. The sequence becomes the only thing that advances it, so the
+        /// tween gives up its delay (the sequence expresses that as an offset instead), its auto-kill and
+        /// any further configuration.
+        /// </summary>
+        void PrepareAsSequenced()
+        {
+            isSequenced = true;
+            creationLocked = true;
+            autoKill = false;
+            isSpeedBased = false;
+            delay = 0.0f;
+            elapsedDelay = 0.0f;
+            delayComplete = true;
+            isPlaying = false;
+        }
+
+        /// <summary>
+        /// The span this tween occupies inside a sequence.
+        /// </summary>
+        /// <returns>Returns one loop times the loop count, in seconds.</returns>
+        float GetSequencedSpan() const
+        {
+            int effectiveLoops = loops == -1 ? 1 : loops;
+            return duration * float(effectiveLoops);
+        }
+
         /// <summary>
         /// Copies the project-wide defaults onto a freshly created tween. Called once, at creation, before
         /// the user has had a chance to chain any setting, so nothing here overrides an explicit choice.
