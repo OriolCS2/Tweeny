@@ -214,6 +214,59 @@ namespace TweenyTests
             }
         }
 
+        // A tween whose target has gone is not a hypothetical: a coroutine that survives a scene change, or
+        // a callback firing after the thing it animates was destroyed, both land here. Binding a delegate
+        // straight to a dead handle takes the whole update down, so every shortcut has to survive being
+        // handed nothing at all -- and has to keep returning a real tween, because callers chain onto it.
+        t.Case("shortcuts given a null target return a harmless tween instead of dying");
+        {
+            Transform@ missingTransform = null;
+            BaseRenderer@ missingRenderer = null;
+            Camera@ missingCamera = null;
+
+            TweenVector3@ move = Tweeny::Move(missingTransform, Vector3(5.0f, 0.0f, 0.0f), 1.0f);
+            t.Check(move !is null, "Move returns a tween rather than null");
+            move.SetEase(Ease::Linear).SetUpdate(UpdateType::Manual);
+            Tweeny::ManualUpdate(0.5f, 0.5f);
+            t.Check(move.IsActive(), "and it can be driven without touching anything");
+            ResetManager();
+
+            t.Check(Tweeny::MoveX(missingTransform, 3.0f, 1.0f) !is null, "MoveX survives it");
+            t.Check(Tweeny::LocalMove(missingTransform, Vector3(1.0f, 0.0f, 0.0f), 1.0f) !is null, "LocalMove survives it");
+            t.Check(Tweeny::Scale(missingTransform, 2.0f, 1.0f) !is null, "Scale survives it");
+            t.Check(Tweeny::Rotate(missingTransform, 90.0f, 1.0f) !is null, "Rotate survives it");
+            t.Check(Tweeny::Tint(missingRenderer, CometEngine::Color(1, 0, 0, 1), 1.0f) !is null, "Tint survives it");
+            t.Check(Tweeny::Fade(missingRenderer, 0.0f, 1.0f) !is null, "Fade survives it");
+            t.Check(Tweeny::OrthoSize(missingCamera, 4.0f, 1.0f) !is null, "OrthoSize survives it");
+            t.Check(Tweeny::PunchPosition(missingTransform, Vector2(1.0f, 0.0f), 0.5f) !is null, "PunchPosition survives it");
+            t.Check(Tweeny::ShakePosition(missingTransform, 0.5f) !is null, "ShakePosition survives it");
+
+            // And they all still tick to completion, which is what stops one dead target from wedging the
+            // scheduler for everything else.
+            Tweeny::ManualUpdate(2.0f, 2.0f);
+            t.Check(true, "and a whole batch of them completes without an exception");
+            ResetManager();
+        }
+
+        t.Case("a tween keeps running after its target is destroyed");
+        {
+            Entity@ doomed = Entity::Create("[Tweeny doomed target]");
+            if (doomed is null) {
+                t.Check(false, "a throwaway entity could be created");
+            }
+            else {
+                Transform@ doomedTransform = Transform::Get(doomed);
+                TweenVector3@ tween = Tweeny::Move(doomedTransform, Vector3(10.0f, 0.0f, 0.0f), 1.0f);
+                tween.SetEase(Ease::Linear).SetUpdate(UpdateType::Manual);
+                Tweeny::ManualUpdate(0.25f, 0.25f);
+
+                Object::Destroy(doomed);
+                Tweeny::ManualUpdate(0.5f, 0.5f);
+                t.Check(true, "ticking a tween whose entity was destroyed does not raise");
+                ResetManager();
+            }
+        }
+
                 // The entity is left in the throwaway test scene: destroying entities outside play mode is deferred to a SceneManager tick that never happens here.
         ResetManager();
     }

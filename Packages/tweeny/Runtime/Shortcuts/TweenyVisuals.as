@@ -16,7 +16,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenColor@ Tint(BaseRenderer@ target, CometEngine::Color to, float duration)
     {
-        TweenColor@ tween = To(ColorGetter(target.get_color), ColorSetter(target.set_color), to, duration);
+        GuardedColor@ guard = IsAlive(target)
+            ? GuardedColor(target, ColorGetter(target.get_color), ColorSetter(target.set_color))
+            : GuardedColor();
+        TweenColor@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -28,7 +31,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenColor@ Fade(BaseRenderer@ target, float toAlpha, float duration)
     {
-        TweenColor@ tween = ToAlpha(ColorGetter(target.get_color), ColorSetter(target.set_color), toAlpha, duration);
+        GuardedColor@ guard = IsAlive(target)
+            ? GuardedColor(target, ColorGetter(target.get_color), ColorSetter(target.set_color))
+            : GuardedColor();
+        TweenColor@ tween = ToAlpha(guard.Getter(), guard.Setter(), toAlpha, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -40,7 +46,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenColor@ Tint(CometEngine::Tilemaps::TilemapRenderer@ target, CometEngine::Color to, float duration)
     {
-        TweenColor@ tween = To(ColorGetter(target.get_color), ColorSetter(target.set_color), to, duration);
+        GuardedColor@ guard = IsAlive(target)
+            ? GuardedColor(target, ColorGetter(target.get_color), ColorSetter(target.set_color))
+            : GuardedColor();
+        TweenColor@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -52,7 +61,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenColor@ Fade(CometEngine::Tilemaps::TilemapRenderer@ target, float toAlpha, float duration)
     {
-        TweenColor@ tween = ToAlpha(ColorGetter(target.get_color), ColorSetter(target.set_color), toAlpha, duration);
+        GuardedColor@ guard = IsAlive(target)
+            ? GuardedColor(target, ColorGetter(target.get_color), ColorSetter(target.set_color))
+            : GuardedColor();
+        TweenColor@ tween = ToAlpha(guard.Getter(), guard.Setter(), toAlpha, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -68,7 +80,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenFloat@ OrthoSize(Camera@ target, float to, float duration)
     {
-        TweenFloat@ tween = To(FloatGetter(target.get_size), FloatSetter(target.set_size), to, duration);
+        GuardedFloat@ guard = IsAlive(target)
+            ? GuardedFloat(target, FloatGetter(target.get_size), FloatSetter(target.set_size), to)
+            : GuardedFloat();
+        TweenFloat@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -80,8 +95,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenColor@ Tint(Camera@ target, CometEngine::Color to, float duration)
     {
-        TweenColor@ tween = To(ColorGetter(target.get_backgroundColor),
-            ColorSetter(target.set_backgroundColor), to, duration);
+        GuardedColor@ guard = IsAlive(target)
+            ? GuardedColor(target, ColorGetter(target.get_backgroundColor), ColorSetter(target.set_backgroundColor))
+            : GuardedColor();
+        TweenColor@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -116,7 +133,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenColor@ Tint(BaseLight@ target, CometEngine::Color to, float duration)
     {
-        TweenColor@ tween = To(ColorGetter(target.get_color), ColorSetter(target.set_color), to, duration);
+        GuardedColor@ guard = IsAlive(target)
+            ? GuardedColor(target, ColorGetter(target.get_color), ColorSetter(target.set_color))
+            : GuardedColor();
+        TweenColor@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -128,8 +148,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenFloat@ Intensity(BaseLight@ target, float to, float duration)
     {
-        TweenFloat@ tween = To(FloatGetter(target.get_intensity),
-            FloatSetter(target.set_intensity), to, duration);
+        GuardedFloat@ guard = IsAlive(target)
+            ? GuardedFloat(target, FloatGetter(target.get_intensity), FloatSetter(target.set_intensity), to)
+            : GuardedFloat();
+        TweenFloat@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -141,8 +163,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenFloat@ ShadowStrength(BaseLight@ target, float to, float duration)
     {
-        TweenFloat@ tween = To(FloatGetter(target.get_shadowStrength),
-            FloatSetter(target.set_shadowStrength), to, duration);
+        GuardedFloat@ guard = IsAlive(target)
+            ? GuardedFloat(target, FloatGetter(target.get_shadowStrength), FloatSetter(target.set_shadowStrength), to)
+            : GuardedFloat();
+        TweenFloat@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -154,8 +178,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenFloat@ Radius(PointLight@ target, float to, float duration)
     {
-        TweenFloat@ tween = To(FloatGetter(target.get_outerRadius),
-            FloatSetter(target.set_outerRadius), to, duration);
+        GuardedFloat@ guard = IsAlive(target)
+            ? GuardedFloat(target, FloatGetter(target.get_outerRadius), FloatSetter(target.set_outerRadius), to)
+            : GuardedFloat();
+        TweenFloat@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -171,7 +197,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenFloat@ Fade(AudioSource@ target, float to, float duration)
     {
-        TweenFloat@ tween = To(FloatGetter(target.get_volume), FloatSetter(target.set_volume), to, duration);
+        GuardedFloat@ guard = IsAlive(target)
+            ? GuardedFloat(target, FloatGetter(target.get_volume), FloatSetter(target.set_volume), to)
+            : GuardedFloat();
+        TweenFloat@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -183,7 +212,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenFloat@ Pitch(AudioSource@ target, float to, float duration)
     {
-        TweenFloat@ tween = To(FloatGetter(target.get_pitch), FloatSetter(target.set_pitch), to, duration);
+        GuardedFloat@ guard = IsAlive(target)
+            ? GuardedFloat(target, FloatGetter(target.get_pitch), FloatSetter(target.set_pitch), to)
+            : GuardedFloat();
+        TweenFloat@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -195,7 +227,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenFloat@ Pan(AudioSource@ target, float to, float duration)
     {
-        TweenFloat@ tween = To(FloatGetter(target.get_pan), FloatSetter(target.set_pan), to, duration);
+        GuardedFloat@ guard = IsAlive(target)
+            ? GuardedFloat(target, FloatGetter(target.get_pan), FloatSetter(target.set_pan), to)
+            : GuardedFloat();
+        TweenFloat@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }

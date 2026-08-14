@@ -17,7 +17,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenColor@ Tint(Graphic@ target, CometEngine::Color to, float duration)
     {
-        TweenColor@ tween = To(ColorGetter(target.get_color), ColorSetter(target.set_color), to, duration);
+        GuardedColor@ guard = IsAlive(target)
+            ? GuardedColor(target, ColorGetter(target.get_color), ColorSetter(target.set_color))
+            : GuardedColor();
+        TweenColor@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -29,7 +32,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenColor@ Fade(Graphic@ target, float toAlpha, float duration)
     {
-        TweenColor@ tween = ToAlpha(ColorGetter(target.get_color), ColorSetter(target.set_color), toAlpha, duration);
+        GuardedColor@ guard = IsAlive(target)
+            ? GuardedColor(target, ColorGetter(target.get_color), ColorSetter(target.set_color))
+            : GuardedColor();
+        TweenColor@ tween = ToAlpha(guard.Getter(), guard.Setter(), toAlpha, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -45,7 +51,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenFloat@ Fade(CanvasGroup@ target, float to, float duration)
     {
-        TweenFloat@ tween = To(FloatGetter(target.get_alpha), FloatSetter(target.set_alpha), to, duration);
+        GuardedFloat@ guard = IsAlive(target)
+            ? GuardedFloat(target, FloatGetter(target.get_alpha), FloatSetter(target.set_alpha), to)
+            : GuardedFloat();
+        TweenFloat@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -61,8 +70,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenVector2@ AnchorPos(RectTransform@ target, Vector2 to, float duration)
     {
-        TweenVector2@ tween = To(Vector2Getter(target.get_anchoredPosition),
-            Vector2Setter(target.set_anchoredPosition), to, duration);
+        GuardedVector2@ guard = IsAlive(target)
+            ? GuardedVector2(target, Vector2Getter(target.get_anchoredPosition), Vector2Setter(target.set_anchoredPosition), to)
+            : GuardedVector2();
+        TweenVector2@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -94,7 +105,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenVector2@ SizeDelta(RectTransform@ target, Vector2 to, float duration)
     {
-        TweenVector2@ tween = To(Vector2Getter(target.get_size), Vector2Setter(target.set_size), to, duration);
+        GuardedVector2@ guard = IsAlive(target)
+            ? GuardedVector2(target, Vector2Getter(target.get_size), Vector2Setter(target.set_size), to)
+            : GuardedVector2();
+        TweenVector2@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -106,7 +120,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenVector2@ Pivot(RectTransform@ target, Vector2 to, float duration)
     {
-        TweenVector2@ tween = To(Vector2Getter(target.get_pivot), Vector2Setter(target.set_pivot), to, duration);
+        GuardedVector2@ guard = IsAlive(target)
+            ? GuardedVector2(target, Vector2Getter(target.get_pivot), Vector2Setter(target.set_pivot), to)
+            : GuardedVector2();
+        TweenVector2@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -118,8 +135,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenVector2@ AnchorMin(RectTransform@ target, Vector2 to, float duration)
     {
-        TweenVector2@ tween = To(Vector2Getter(target.get_anchorMin),
-            Vector2Setter(target.set_anchorMin), to, duration);
+        GuardedVector2@ guard = IsAlive(target)
+            ? GuardedVector2(target, Vector2Getter(target.get_anchorMin), Vector2Setter(target.set_anchorMin), to)
+            : GuardedVector2();
+        TweenVector2@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -131,8 +150,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenVector2@ AnchorMax(RectTransform@ target, Vector2 to, float duration)
     {
-        TweenVector2@ tween = To(Vector2Getter(target.get_anchorMax),
-            Vector2Setter(target.set_anchorMax), to, duration);
+        GuardedVector2@ guard = IsAlive(target)
+            ? GuardedVector2(target, Vector2Getter(target.get_anchorMax), Vector2Setter(target.set_anchorMax), to)
+            : GuardedVector2();
+        TweenVector2@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -147,8 +168,11 @@ namespace Tweeny
     TweenVector2Array@ PunchAnchorPos(RectTransform@ target, Vector2 punch, float duration,
         int vibrato = 10, float elasticity = 1.0f)
     {
-        TweenVector2Array@ tween = Punch(Vector2Getter(target.get_anchoredPosition),
-            Vector2Setter(target.set_anchoredPosition), punch, duration, vibrato, elasticity);
+        GuardedVector2@ guard = IsAlive(target)
+            ? GuardedVector2(target, Vector2Getter(target.get_anchoredPosition),
+                             Vector2Setter(target.set_anchoredPosition))
+            : GuardedVector2();
+        TweenVector2Array@ tween = Punch(guard.Getter(), guard.Setter(), punch, duration, vibrato, elasticity);
         tween.SetTarget(target);
         return tween;
     }
@@ -165,9 +189,12 @@ namespace Tweeny
     TweenVector2Array@ ShakeAnchorPos(RectTransform@ target, float duration, float strength = 100.0f,
         int vibrato = 10, float randomness = 90.0f, bool fadeOut = true, uint seed = 0)
     {
-        TweenVector2Array@ tween = Shake(Vector2Getter(target.get_anchoredPosition),
-            Vector2Setter(target.set_anchoredPosition), duration, strength, vibrato, randomness,
-            fadeOut, ShakeRandomnessMode::Full, seed);
+        GuardedVector2@ guard = IsAlive(target)
+            ? GuardedVector2(target, Vector2Getter(target.get_anchoredPosition),
+                             Vector2Setter(target.set_anchoredPosition))
+            : GuardedVector2();
+        TweenVector2Array@ tween = Shake(guard.Getter(), guard.Setter(), duration, strength, vibrato,
+            randomness, fadeOut, ShakeRandomnessMode::Full, seed);
         tween.SetTarget(target);
         return tween;
     }
@@ -183,7 +210,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenFloat@ Value(Slider@ target, float to, float duration)
     {
-        TweenFloat@ tween = To(FloatGetter(target.get_value), FloatSetter(target.set_value), to, duration);
+        GuardedFloat@ guard = IsAlive(target)
+            ? GuardedFloat(target, FloatGetter(target.get_value), FloatSetter(target.set_value), to)
+            : GuardedFloat();
+        TweenFloat@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -195,8 +225,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenFloat@ NormalizedValue(Slider@ target, float to, float duration)
     {
-        TweenFloat@ tween = To(FloatGetter(target.get_normalizedValue),
-            FloatSetter(target.set_normalizedValue), to, duration);
+        GuardedFloat@ guard = IsAlive(target)
+            ? GuardedFloat(target, FloatGetter(target.get_normalizedValue), FloatSetter(target.set_normalizedValue), to)
+            : GuardedFloat();
+        TweenFloat@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }

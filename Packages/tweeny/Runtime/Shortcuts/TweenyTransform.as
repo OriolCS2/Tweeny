@@ -9,7 +9,10 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenVector3@ Move(Transform@ target, Vector3 to, float duration)
     {
-        TweenVector3@ tween = To(Vector3Getter(target.get_position), Vector3Setter(target.set_position), to, duration);
+        GuardedVector3@ guard = IsAlive(target)
+            ? GuardedVector3(target, Vector3Getter(target.get_position), Vector3Setter(target.set_position), to)
+            : GuardedVector3();
+        TweenVector3@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -64,8 +67,11 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenVector3@ LocalMove(Transform@ target, Vector3 to, float duration)
     {
-        TweenVector3@ tween = To(Vector3Getter(target.get_localPosition),
-            Vector3Setter(target.set_localPosition), to, duration);
+        GuardedVector3@ guard = IsAlive(target)
+            ? GuardedVector3(target, Vector3Getter(target.get_localPosition),
+                             Vector3Setter(target.set_localPosition), to)
+            : GuardedVector3();
+        TweenVector3@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }
@@ -97,8 +103,11 @@ namespace Tweeny
     /// <returns>Returns the tween so settings can be chained onto it.</returns>
     TweenVector3@ Scale(Transform@ target, Vector3 to, float duration)
     {
-        TweenVector3@ tween = To(Vector3Getter(target.get_localScale),
-            Vector3Setter(target.set_localScale), to, duration);
+        GuardedVector3@ guard = IsAlive(target)
+            ? GuardedVector3(target, Vector3Getter(target.get_localScale),
+                             Vector3Setter(target.set_localScale), to)
+            : GuardedVector3();
+        TweenVector3@ tween = To(guard.Getter(), guard.Setter(), to, duration);
         tween.SetTarget(target);
         return tween;
     }

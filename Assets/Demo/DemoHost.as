@@ -494,18 +494,40 @@ class DemoHost : CometBehaviour
 
     private void CoroutineDemo()
     {
+        // A coroutine outlives the scene it was started in: the tour moves on, this scene's entities are
+        // destroyed, and the next resume would carry on animating things that no longer exist. Remembering
+        // which demo started it is what lets each step check whether it is still wanted.
+        int startedOn = currentIndex;
+
         Entity@ a = Spawn("first", Vector2(-6.0f, 2.0f), Color(0.4f, 0.9f, 0.9f, 1.0f));
         Entity@ b = Spawn("second", Vector2(0.0f, 2.0f), Color(0.9f, 0.7f, 0.4f, 1.0f));
         Entity@ c = Spawn("third", Vector2(6.0f, 2.0f), Color(0.9f, 0.4f, 0.6f, 1.0f));
 
+        if (!StillRunning(startedOn)) { return; }
         Yield(WaitForCompletion(Tweeny::MoveY(Transform::Get(a), -2.0f, 1.0f).SetEase(Ease::OutBack)));
+        if (!StillRunning(startedOn)) { return; }
         Yield(WaitForCompletion(Tweeny::MoveY(Transform::Get(b), -2.0f, 1.0f).SetEase(Ease::OutBack)));
+        if (!StillRunning(startedOn)) { return; }
         Yield(WaitForCompletion(Tweeny::MoveY(Transform::Get(c), -2.0f, 1.0f).SetEase(Ease::OutBack)));
+        if (!StillRunning(startedOn)) { return; }
         Yield(WaitForSeconds(0.3f));
+        if (!StillRunning(startedOn)) { return; }
         Yield(WaitForCompletion(Tweeny::Scale(Transform::Get(a), 2.0f, 0.5f)));
+        if (!StillRunning(startedOn)) { return; }
         Yield(WaitForCompletion(Tweeny::Scale(Transform::Get(b), 2.0f, 0.5f)));
+        if (!StillRunning(startedOn)) { return; }
         Yield(WaitForCompletion(Tweeny::Scale(Transform::Get(c), 2.0f, 0.5f)));
         Debug::Log("[Tweeny demo] the coroutine finished its cutscene");
+    }
+
+    /// <summary>
+    /// Whether the demo that started a coroutine is still the one on screen.
+    /// </summary>
+    /// <param name="startedOn">Index of the demo the coroutine belongs to.</param>
+    /// <returns>Returns true while that demo is still running.</returns>
+    private bool StillRunning(int startedOn)
+    {
+        return currentIndex == startedOn && !advancing;
     }
 
     /// The inspector-driven component, configured here in code only because these scenes are generated.
