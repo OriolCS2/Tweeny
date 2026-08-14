@@ -1,0 +1,19 @@
+{
+    "Fields": {
+        "bool runDemoTour": {
+            "Value": true
+        },
+        "string& tourReportPath": {
+            "Value": "C:/Users/oriol/AppData/Local/Temp/claude/E--GitHub-Tweeny/50466a2b-f263-4f3e-9dfe-f0ef3fa50d79/scratchpad/tour.txt"
+        },
+        "string& capturePath": {
+            "Value": "C:/Users/oriol/AppData/Local/Temp/claude/E--GitHub-Tweeny/50466a2b-f263-4f3e-9dfe-f0ef3fa50d79/scratchpad/frames/"
+        },
+        "float captureFps": {
+            "Value": 20.0
+        },
+        "int captureFramesPerScene": {
+            "Value": 48
+        }
+    }
+}

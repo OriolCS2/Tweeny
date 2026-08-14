@@ -9,7 +9,8 @@ namespace Tweeny
     /// destroyed, the tween keeps writing into nothing, and either it silently does nothing or it takes the
     /// process with it. A link makes that impossible by watching the entity every frame.
     ///
-    /// KillOnDestroy is always enforced regardless of the chosen behaviour, which mirrors DOTween.
+    /// KillOnDestroy is always enforced on top of whichever behaviour was chosen: a link that only pauses
+    /// on disable still has to kill the tween once the entity is gone, or it would leak.
     /// </summary>
     class TweenLink
     {

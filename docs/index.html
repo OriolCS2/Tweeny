@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tweeny — tweening for CometEngine</title>
+<meta name="description" content="A complete tweening and animation engine for CometEngine.">
+<style>
+  :root {
+    --ground:       #F4F6F6;
+    --surface:      #FFFFFF;
+    --surface-sunk: #EAEEEE;
+    --line:         #D3DBDA;
+    --line-soft:    #E3E9E8;
+    --ink:          #0E1614;
+    --ink-2:        #3D4A47;
+    --ink-3:        #6B7A76;
+    --accent:       #00756B;
+    --accent-soft:  #D8ECE9;
+    --amber:        #9A5B00;
+    --amber-soft:   #FBEBD2;
+
+    --mono: ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+    --sans: ui-sans-serif, "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:       #0A1110;
+      --surface:      #111B19;
+      --surface-sunk: #0D1615;
+      --line:         #23322F;
+      --line-soft:    #1A2725;
+      --ink:          #DFEAE7;
+      --ink-2:        #A6B7B3;
+      --ink-3:        #74857F;
+      --accent:       #4ECDC0;
+      --accent-soft:  #16302D;
+      --amber:        #E0A458;
+      --amber-soft:   #2E2415;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 58rem; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+
+  header.hero {
+    display: flex; flex-direction: column; gap: 1rem;
+    padding: 2rem 0 2rem; border-bottom: 2px solid var(--ink); margin-bottom: 3rem;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent); margin: 0;
+  }
+  h1 {
+    font-size: clamp(2.6rem, 7vw, 4rem); line-height: 1; letter-spacing: -.04em;
+    font-weight: 680; margin: 0; text-wrap: balance;
+  }
+  .tagline { font-size: 1.15rem; color: var(--ink-2); margin: 0; max-width: 42rem; }
+  .badges { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-3); }
+
+  h2 {
+    font-size: 1.6rem; letter-spacing: -.02em; font-weight: 640; margin: 3rem 0 .75rem;
+    padding-bottom: .4rem; border-bottom: 1px solid var(--line); text-wrap: balance;
+  }
+  h3 { font-size: 1.08rem; font-weight: 640; margin: 2rem 0 .4rem; letter-spacing: -.01em; }
+  p { margin: 0 0 1rem; max-width: 62ch; }
+
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+  code {
+    font-family: var(--mono); font-size: .86em; background: var(--surface-sunk);
+    border: 1px solid var(--line-soft); border-radius: 3px; padding: .08em .34em;
+  }
+  pre {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 5px;
+    padding: 1rem; overflow-x: auto; margin: 0 0 1.25rem;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: .84rem; line-height: 1.6; }
+
+  .note {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    padding: .85rem 1.1rem; border-radius: 0 4px 4px 0; margin: 0 0 1.25rem;
+  }
+  .note.warn { border-left-color: var(--amber); background: var(--amber-soft); }
+  .note p { margin: 0; max-width: 66ch; }
+  .note p + p { margin-top: .5rem; }
+
+  .scroller { overflow-x: auto; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); margin: 0 0 1.5rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  th, td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  thead th {
+    background: var(--surface-sunk); font-family: var(--mono); font-size: .7rem;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.api { font-family: var(--mono); font-size: .82rem; }
+
+  .feature {
+    display: grid; grid-template-columns: 1fr; gap: 1rem;
+    border: 1px solid var(--line); border-radius: 6px; background: var(--surface);
+    padding: 1.25rem; margin: 0 0 1.5rem;
+  }
+  .feature h3 { margin: 0; }
+  .feature p { margin: 0; }
+  .feature pre { margin: 0; }
+  .feature figure { margin: 0; }
+  .feature img { width: 100%; max-width: 100%; border-radius: 4px; display: block; border: 1px solid var(--line); }
+  .feature figcaption { font-size: .78rem; color: var(--ink-3); margin-top: .4rem; }
+
+  @media (min-width: 46rem) {
+    .feature.with-media { grid-template-columns: 1fr 1fr; align-items: start; }
+    .feature.with-media h3, .feature.with-media > p { grid-column: 1 / -1; }
+  }
+
+  ul { margin: 0 0 1rem; padding-left: 1.15rem; max-width: 62ch; }
+  li { margin-bottom: .25rem; }
+  li::marker { color: var(--ink-3); }
+
+  footer {
+    margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line);
+    font-size: .85rem; color: var(--ink-3);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <p class="eyebrow">A package for CometEngine</p>
+  <h1>Tweeny</h1>
+  <p class="tagline">
+    Animate anything over time — positions, rotations, scales, colours, alpha, UI, audio, or any value you can
+    read and write. Written for <a href="https://github.com/OriolCS2/CometEngine">CometEngine</a> and
+    AngelScript.
+  </p>
+  <div class="badges">
+    <span>38 easing curves</span>
+    <span>Sequences &amp; paths</span>
+    <span>Coroutine friendly</span>
+    <span>No-code component</span>
+    <span>MIT</span>
+  </div>
+</header>
+
+<p>
+  Tweeny is a tweening engine: you tell it where a value should end up and how long it should take, and it
+  moves it there smoothly every frame. It handles the easing, the looping, the sequencing and the cleanup, so
+  animation stops being something you hand-roll in <code>Update</code> and becomes one line.
+</p>
+
+<pre><code>using namespace Tweeny;
+
+Move(transform, Vector2(5.0f, 0.0f), 1.0f)
+    .SetEase(Ease::OutBack)
+    .SetLoops(-1, LoopType::Yoyo);</code></pre>
+
+<h2>Install</h2>
+
+<p>
+  Import the package into your CometEngine project. That is the whole setup — there is no manager prefab to
+  place, no script to register and no initialisation call. Tweeny registers itself through a project setting,
+  so the engine creates its runner at play start the moment the package is present.
+</p>
+
+<p>
+  Open <strong>Project Settings &rsaquo; TweenySettings</strong> to change the defaults: easing curve, loop
+  type, auto-kill, auto-play, global time scale and logging.
+</p>
+
+<h2>The basics</h2>
+
+<p>
+  Every tween is created by a function that takes what to animate, where it should end up and how long it
+  should take. The call returns the tween, so settings chain onto it.
+</p>
+
+<pre><code>// Slide to a position over half a second.
+Move(transform, Vector2(3.0f, 0.0f), 0.5f);
+
+// Grow, with an easing curve, and do it three times.
+Scale(transform, 2.0f, 0.4f)
+    .SetEase(Ease::InOutQuad)
+    .SetLoops(3, LoopType::Yoyo);
+
+// Fade a sprite out and do something when it lands.
+Fade(renderer, 0.0f, 0.8f)
+    .OnComplete(TweenCallback(this.OnFadedOut));</code></pre>
+
+<p>
+  Shortcuts take their target as the first argument. AngelScript has no extension methods, so a shortcut
+  cannot hang off the object as <code>transform.Move(...)</code> — it is <code>Move(transform, ...)</code>
+  instead, a free function in the <code>Tweeny</code> namespace.
+</p>
+
+<h2>Features</h2>
+
+<div class="feature">
+  <h3>Easing</h3>
+  <p>
+    Thirty-eight built-in curves. Back and Elastic overshoot, Bounce settles, Flash blinks. You can also
+    pass your own function, or wrap any curve in a stop-motion sampler.
+  </p>
+<pre><code>Move(transform, target, 1.0f).SetEase(Ease::OutBounce);
+Move(transform, target, 1.0f).SetEase(Ease::OutBack, 3.0f);          // stronger overshoot
+Move(transform, target, 1.0f).SetEase(Ease::OutElastic, 1.5f, 0.4f); // amplitude, period
+Move(transform, target, 1.0f).SetEase(EaseFunc(this.MyCurve));       // your own
+Move(transform, target, 1.0f).SetEase(EaseFactory::StopMotion(8, Ease::Linear));</code></pre>
+</div>
+
+<div class="feature">
+  <h3>Loops and direction</h3>
+  <p>
+    <code>Restart</code> starts over each cycle, <code>Yoyo</code> alternates forwards and backwards, and
+    <code>Incremental</code> keeps adding the change so the motion travels further each time. A loop count of
+    <code>-1</code> runs forever.
+  </p>
+<pre><code>MoveX(transform, 5.0f, 1.0f).SetLoops(-1, LoopType::Yoyo);
+MoveX(transform, 5.0f, 1.0f).SetLoops(4, LoopType::Incremental);
+MoveX(transform, 5.0f, 1.0f).SetDelay(0.5f).SetRelative(true);</code></pre>
+</div>
+
+<div class="feature">
+  <h3>Sequences</h3>
+  <p>
+    A sequence plays tweens on one timeline. <code>Append</code> puts one after the last,
+    <code>Join</code> runs one alongside the last, <code>Insert</code> drops one at an exact time, and
+    intervals and callbacks slot in anywhere. Sequences nest.
+  </p>
+<pre><code>TweenSequence@ intro = Sequence();
+intro.Append(Move(transform, Vector2(0.0f, 3.0f), 0.5f));
+intro.Join(Tint(renderer, red, 0.5f));          // at the same time as the move
+intro.AppendInterval(0.2f);
+intro.Append(Scale(transform, 1.5f, 0.3f));
+intro.AppendCallback(TweenCallback(this.OnIntroDone));
+intro.SetLoops(2, LoopType::Restart);</code></pre>
+  <p>
+    To animate two properties of the same object together you do not even need a sequence — two tweens on the
+    same target simply coexist:
+  </p>
+<pre><code>Scale(transform, 1.5f, 0.4f);
+Tint(renderer, red, 0.4f);</code></pre>
+</div>
+
+<div class="feature">
+  <h3>Punch, shake and jump</h3>
+  <p>
+    Impact effects that always end exactly where they started, so they can be fired on top of whatever else is
+    happening. Shakes take a seed, so a shake can be replayed identically.
+  </p>
+<pre><code>PunchPosition(transform, Vector2(0.5f, 0.0f), 0.4f);
+PunchScale(transform, Vector2(0.3f, 0.3f), 0.4f, 10, 1.0f);
+ShakePosition(transform, 0.5f, 2.0f, 14);
+ShakePosition(transform, 0.5f, 2.0f, 14, 90.0f, true, 4242);  // reproducible
+Jump(transform, Vector2(8.0f, 0.0f), 3.0f, 2, 1.0f);</code></pre>
+</div>
+
+<div class="feature">
+  <h3>Paths</h3>
+  <p>
+    Move along a list of waypoints in straight lines or a smooth curve. The path is measured when the tween
+    starts, so travel is at a constant speed rather than speeding up wherever the waypoints bunch together.
+  </p>
+<pre><code>array&lt;Vector2&gt; route = { Vector2(5, 3), Vector2(5, -1), Vector2(-5, -1) };
+
+Path(transform, route, 4.0f, PathType::Linear).SetClosePath(true);
+Path(transform, route, 4.0f, PathType::CatmullRom)
+    .OnWaypointChange(TweenCallbackInt(this.OnWaypoint));</code></pre>
+</div>
+
+<div class="feature">
+  <h3>Callbacks and control</h3>
+  <p>
+    Nine lifecycle callbacks, and full playback control on any tween — including seeking to an arbitrary point
+    on its timeline.
+  </p>
+<pre><code>TweenVector3@ t = Move(transform, target, 2.0f)
+    .SetAutoKill(false)
+    .OnStart(TweenCallback(this.OnStart))
+    .OnStepComplete(TweenCallback(this.OnLoop))
+    .OnComplete(TweenCallback(this.OnDone));
+
+t.Pause();
+t.Play();
+t.Goto(1.2f);        // jump to 1.2 seconds in
+t.Flip();            // reverse direction
+t.Restart();
+t.Complete(false);
+t.Kill(false);</code></pre>
+</div>
+
+<div class="feature">
+  <h3>Finding tweens again</h3>
+  <p>
+    Tag tweens with an id, or find them by the object they animate, and drive them in bulk.
+  </p>
+<pre><code>MoveX(transform, 5.0f, 1.0f).SetId("intro");
+
+Pause("intro");
+Kill("intro");
+Kill(transform);           // everything animating this transform
+bool busy = IsTweening(transform);
+
+PauseAll();
+KillAll(true);             // true completes them first
+SetTimeScale(0.25f);       // slow motion for every tween</code></pre>
+</div>
+
+<div class="feature">
+  <h3>Waiting in coroutines</h3>
+  <p>
+    Six yield instructions turn a coroutine into a readable cutscene script. A tween that gets killed releases
+    the wait too, so a coroutine can never be stranded.
+  </p>
+<pre><code>void PlayIntro()
+{
+    Yield(WaitForCompletion(Move(transform, up, 0.6f).SetEase(Ease::OutBack)));
+    Yield(WaitForSeconds(0.2f));
+    Yield(WaitForCompletion(Tint(renderer, gold, 0.4f)));
+    Yield(WaitForElapsedLoops(spinner, 3));
+}</code></pre>
+</div>
+
+<div class="feature">
+  <h3>Animating your own values</h3>
+  <p>
+    Any pair of functions that read and write a value can be tweened. This is how you animate things Tweeny
+    has never heard of — a health bar, a shader parameter, a score counter.
+  </p>
+<pre><code>float GetHealth() { return health; }
+void SetHealth(float v) { health = v; }
+
+To(FloatGetter(this.GetHealth), FloatSetter(this.SetHealth), 100.0f, 2.0f)
+    .SetEase(Ease::OutQuint);
+
+// Counting a score up, as whole numbers.
+To(IntGetter(this.GetScore), IntSetter(this.SetScore), 1500, 1.5f);
+
+// Typing text out, with scrambled characters filling the rest.
+To(StringGetter(this.GetLabel), StringSetter(this.SetLabel), "READY", 1.0f)
+    .SetScramble(ScrambleMode::Uppercase);</code></pre>
+</div>
+
+<div class="feature">
+  <h3>Tying a tween to an entity</h3>
+  <p>
+    A tween that outlives what it animates is the most common way tween code goes wrong. Link it, and it stops,
+    restarts or dies along with the entity. A destroyed entity always kills the tween, whatever behaviour you pick.
+  </p>
+<pre><code>ITween@ t = Move(transform, target, 5.0f);
+SetLink(t, entity, LinkBehaviour::PauseOnDisablePlayOnEnable);</code></pre>
+</div>
+
+<div class="feature">
+  <h3>No code at all</h3>
+  <p>
+    Add a <code>TweenyAnimation</code> component, pick what to animate and how, and press Play. It covers moves,
+    scales, rotations, tints, fades, punches and shakes, with the same timing and looping options as the API.
+  </p>
+</div>
+
+<h2>The Tweeny Inspector</h2>
+
+<p>
+  <strong>Tweeny &rsaquo; Tweeny Inspector</strong> in the main menu lists every live tween with its progress and
+  state, and gives each one play, pause, rewind, complete and kill buttons. The preview button runs the tweens
+  inside the editor without entering play mode, and puts every target back where it was when you stop.
+</p>
+
+<h2>How the API reads</h2>
+
+<p>
+  Every shortcut is a free function in the <code>Tweeny</code> namespace that takes its target first, because
+  AngelScript has no extension methods. Nothing carries a prefix — the namespace already keeps
+  <code>Tweeny::Move</code> unambiguous. Everything after the shortcut is a chained setter that returns the
+  tween, so a whole animation stays one statement.
+</p>
+
+<div class="scroller">
+<table>
+  <thead><tr><th>Reads as</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td class="api">Move(transform, v, t)</td><td>Slides to a position</td></tr>
+    <tr><td class="api">Scale(transform, s, t)</td><td>Grows or shrinks</td></tr>
+    <tr><td class="api">Rotate(transform, degrees, t)</td><td>Turns by a scalar angle</td></tr>
+    <tr><td class="api">Tint(renderer, c, t)</td><td>Changes colour</td></tr>
+    <tr><td class="api">Fade(renderer, a, t)</td><td>Changes alpha only</td></tr>
+    <tr><td class="api">Path(transform, ...)</td><td>Follows a list of waypoints</td></tr>
+    <tr><td class="api">Sequence()</td><td>Builds a timeline of tweens</td></tr>
+    <tr><td class="api">KillAll()</td><td>Stops everything at once</td></tr>
+    <tr><td class="api">Yield(WaitForCompletion(tween))</td><td>Waits inside a coroutine</td></tr>
+    <tr><td class="api">TweenyAnimation</td><td>Animates from the inspector, no code</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>
+  Two names are worth calling out. <code>Rotate</code> takes a scalar angle rather than a quaternion, because
+  CometEngine is 2D and that is also what makes <code>RotateMode::FastBeyond360</code> expressible. And the
+  colour shortcut is <code>Tint</code>, not <code>Color</code>, so it can never collide with Comet's own
+  <code>Color</code> type in a file that imports both namespaces.
+</p>
+
+<h3>What is not here, and why</h3>
+
+<ul>
+  <li>
+    <strong>Object pooling.</strong> Pools exist to dodge a tracing garbage collector. AngelScript is reference
+    counted, so a finished tween is released as soon as the last handle drops. A pool would buy nothing and
+    bring its worst footgun: a recycled tween reporting itself alive while being a different animation entirely.
+  </li>
+  <li>
+    <strong><code>await</code>-style asynchrony</strong> has no AngelScript equivalent. Nothing is lost: use
+    <code>OnComplete</code>, or wait inside a coroutine.
+  </li>
+  <li>
+    <strong>Generic plugins.</strong> AngelScript has no script-side generics. Write a <code>To</code> with your
+    own getter and setter instead — that is the extension point, and it is the same one every built-in shortcut
+    is built on.
+  </li>
+</ul>
+
+<h2>Seeing it run</h2>
+
+<p>
+  The <a href="https://github.com/OriolCS2/Tweeny">repository</a> ships eleven demo scenes covering every
+  feature. Open the project and press Play on <code>00_Bootstrap</code>: the tour walks itself through all of
+  them and loops back to the start, so one Play shows easings, loops, sequences, punch and shake, jumps, paths,
+  shortcuts, playback control, coroutines, the no-code component, and a stress test running four hundred
+  simultaneous tweens.
+</p>
+
+<footer>
+  Tweeny is MIT licensed. Built for
+  <a href="https://github.com/OriolCS2/CometEngine">CometEngine</a> by Oriol Capdevila.
+</footer>
+
+</div>
+</body>
+</html>

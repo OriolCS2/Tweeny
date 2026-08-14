@@ -13,73 +13,73 @@ namespace Tweeny
     ///   void TweenApply(float eased, UpdateNotice notice) -- write the interpolated value to the target
     ///   void TweenReleaseReferences()                     -- drop the getter, setter and target handles
     ///
-    /// The design follows DOTween's central rule: the POSITION is authoritative and the delta is only an
+    /// One rule holds the design together: the POSITION is authoritative and the delta is only an
     /// input. Everything -- ticking, Goto, Rewind, Complete, Restart and sequence playback -- funnels
     /// through DoGotoInternal, so there is a single place where callbacks and loop accounting happen.
     /// </summary>
     mixin class TweenCore
     {
         // ---- identity -------------------------------------------------------------------------------
-        string tweenStringId = "";
-        int tweenIntId = -999;
-        Object@ tweenTarget;
+        protected string tweenStringId = "";
+        protected int tweenIntId = -999;
+        protected Object@ tweenTarget;
 
         // ---- timing ---------------------------------------------------------------------------------
-        float duration = 0.0f;
-        float position = 0.0f;
-        float delay = 0.0f;
-        float elapsedDelay = 0.0f;
-        bool delayComplete = true;
-        int loops = 1;
-        int completedLoops = 0;
-        LoopType loopType = LoopType::Restart;
-        float timeScale = 1.0f;
+        protected float duration = 0.0f;
+        protected float position = 0.0f;
+        protected float delay = 0.0f;
+        protected float elapsedDelay = 0.0f;
+        protected bool delayComplete = true;
+        protected int loops = 1;
+        protected int completedLoops = 0;
+        protected LoopType loopType = LoopType::Restart;
+        protected float timeScale = 1.0f;
 
         // ---- easing ---------------------------------------------------------------------------------
-        Ease easeType = Ease::Unset;
-        EaseFunc@ customEase;
-        float easeOvershootOrAmplitude = DEFAULT_OVERSHOOT;
-        float easePeriod = DEFAULT_PERIOD;
+        protected Ease easeType = Ease::Unset;
+        protected EaseFunc@ customEase;
+        protected float easeOvershootOrAmplitude = DEFAULT_OVERSHOOT;
+        protected float easePeriod = DEFAULT_PERIOD;
 
         // ---- state ----------------------------------------------------------------------------------
-        bool active = true;
-        bool isPlaying = false;
-        bool isComplete = false;
-        bool isBackwards = false;
-        bool isInverted = false;
-        bool playedOnce = false;
-        bool startupDone = false;
-        bool creationLocked = false;
-        bool autoKill = true;
-        bool isRelative = false;
-        bool isSpeedBased = false;
-        bool isFrom = false;
-        bool noFromAllowed = false;
-        bool isBlendable = false;
-        bool isSequenced = false;
-        bool killPending = false;
-        UpdateType updateType = UpdateType::Normal;
-        bool independentUpdate = false;
-        TweenType tweenType = TweenType::Tweener;
+        protected bool active = true;
+        protected bool isPlaying = false;
+        protected bool isComplete = false;
+        protected bool isBackwards = false;
+        protected bool isInverted = false;
+        protected bool playedOnce = false;
+        protected bool startupDone = false;
+        protected bool creationLocked = false;
+        protected bool autoKill = true;
+        protected bool isRelative = false;
+        protected bool isSpeedBased = false;
+        protected bool isFrom = false;
+        protected bool noFromAllowed = false;
+        protected bool isBlendable = false;
+        protected bool isSequenced = false;
+        protected bool killPending = false;
+        protected UpdateType updateType = UpdateType::Normal;
+        protected bool independentUpdate = false;
+        protected TweenType tweenType = TweenType::Tweener;
 
         // ---- callbacks ------------------------------------------------------------------------------
-        TweenCallback@ onStart;
-        TweenCallback@ onPlay;
-        TweenCallback@ onPause;
-        TweenCallback@ onRewind;
-        TweenCallback@ onUpdate;
-        TweenCallback@ onStepComplete;
-        TweenCallback@ onComplete;
-        TweenCallback@ onKill;
-        TweenCallbackInt@ onWaypointChange;
+        protected TweenCallback@ onStart;
+        protected TweenCallback@ onPlay;
+        protected TweenCallback@ onPause;
+        protected TweenCallback@ onRewind;
+        protected TweenCallback@ onUpdate;
+        protected TweenCallback@ onStepComplete;
+        protected TweenCallback@ onComplete;
+        protected TweenCallback@ onKill;
+        protected TweenCallbackInt@ onWaypointChange;
 
         // =============================================================================================
         // Scheduler entry point
         // =============================================================================================
 
         /// <summary>
-        /// Advances the tween by one frame. Ported from DOTween's TweenManager.Update: it turns the delta
-        /// into a target position and loop count, then hands both to DoGotoInternal.
+        /// Advances the tween by one frame: it turns the delta into a target position and loop count, then
+        /// hands both to DoGotoInternal, which is the only place that actually moves the tween.
         /// </summary>
         /// <param name="deltaTime">Scaled seconds since the last tick.</param>
         /// <param name="unscaledDeltaTime">Unscaled seconds since the last tick.</param>

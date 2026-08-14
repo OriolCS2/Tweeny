@@ -50,7 +50,8 @@ namespace Tweeny
     }
 
     /// <summary>
-    /// Builds a vector of the given length pointing at an angle, matching DOTween's Vector3FromAngle.
+    /// Builds a vector of the given length pointing at an angle. Used by shake and punch to turn a random
+    /// direction into an offset.
     /// </summary>
     /// <param name="degrees">The direction, in degrees.</param>
     /// <param name="magnitude">How long the vector should be.</param>

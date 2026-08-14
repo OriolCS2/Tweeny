@@ -31,8 +31,8 @@ namespace Tweeny
     /// <summary>
     /// Animates an entity straight from the inspector, with no code at all.
     ///
-    /// DOTween's equivalent, DOTweenAnimation, is a closed Pro component; this is the open version. Add it,
-    /// pick what to animate and how, and press Play.
+    /// Add it, pick what to animate and how, and press Play. Everything it can do is also reachable from
+    /// script; this is the same feature set wired to inspector fields for designers.
     /// </summary>
     class TweenyAnimation : CometBehaviour
     {

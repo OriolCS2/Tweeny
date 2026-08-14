@@ -3,8 +3,8 @@ using namespace CometEngine;
 namespace Tweeny
 {
     /// <summary>
-    /// The easing curve applied to a tween's progress. Declaration order matches DOTween so numeric
-    /// values serialized by other tools stay compatible.
+    /// The easing curve applied to a tween's progress. The declaration order is part of the serialized
+    /// format, so entries are only ever appended: inserting one would silently repoint saved values.
     /// </summary>
     enum Ease
     {

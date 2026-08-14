@@ -1,0 +1,145 @@
+{
+    "Name": "02_Sequences",
+    "Path": "Scenes\/02_Sequences",
+    "RootID": "8815045311485419454",
+    "Entities": [
+        {
+            "Name": "Main Camera",
+            "ID": "8577504939471797791",
+            "ParentID": "8815045311485419454",
+            "ChildIndex": 0,
+            "Enabled": true,
+            "IsUpEnabled": true,
+            "IsStatic": false,
+            "Layer": 1,
+            "Tag": "Untagged",
+            "Valid": true,
+            "Selectable": true,
+            "UpSelectable": true,
+            "Visible": true,
+            "UpVisible": true,
+            "Behaviours": {
+                "3125320698632323147": {
+                    "Type": "Transform",
+                    "Enabled": true,
+                    "Position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "Rotation": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0,
+                        "w": 1
+                    },
+                    "Scale": {
+                        "x": 1,
+                        "y": 1,
+                        "z": 1
+                    }
+                },
+                "16301994253742707630": {
+                    "Type": "Camera",
+                    "Enabled": true,
+                    "CullingMask": 2147483647,
+                    "BackCol": {
+                        "r": 0.192,
+                        "g": 0.302,
+                        "b": 0.475,
+                        "a": 1
+                    },
+                    "FarPlane": 200,
+                    "NearPlane": 0,
+                    "Size": 5,
+                    "PixelPerfect": false,
+                    "PixelPerfectPPU": 100,
+                    "PixelPerfectRefResX": 320,
+                    "PixelPerfectRefResY": 180,
+                    "PixelPerfectUpscaleRT": true,
+                    "PixelPerfectPixelSnapping": true,
+                    "PixelPerfectCropX": false,
+                    "PixelPerfectCropY": false,
+                    "PixelPerfectStretchFill": false,
+                    "PostProcessing": true,
+                    "Depth": -1,
+                    "Viewport": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 1,
+                        "w": 1
+                    },
+                    "Texture": "0"
+                },
+                "504225078468792784": {
+                    "Type": "AudioListener",
+                    "Enabled": true
+                }
+            }
+        },
+        {
+            "Name": "Global Light",
+            "ID": "8593816680912414369",
+            "ParentID": "8815045311485419454",
+            "ChildIndex": 1,
+            "Enabled": true,
+            "IsUpEnabled": true,
+            "IsStatic": false,
+            "Layer": 1,
+            "Tag": "Untagged",
+            "Valid": true,
+            "Selectable": true,
+            "UpSelectable": true,
+            "Visible": true,
+            "UpVisible": true,
+            "Behaviours": {
+                "8143112287354649018": {
+                    "Type": "Transform",
+                    "Enabled": true,
+                    "Position": {
+                        "x": 0,
+                        "y": 10,
+                        "z": 0
+                    },
+                    "Rotation": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0,
+                        "w": 1
+                    },
+                    "Scale": {
+                        "x": 1,
+                        "y": 1,
+                        "z": 1
+                    }
+                },
+                "5040025708786155045": {
+                    "Type": "GlobalLight",
+                    "Enabled": true,
+                    "Intensity": 1,
+                    "Height": 1,
+                    "Color": {
+                        "r": 1,
+                        "g": 1,
+                        "b": 1,
+                        "a": 1
+                    },
+                    "BlendMode": 0,
+                    "CastShadows": 0,
+                    "ShadowMode": 0,
+                    "ShadowColor": {
+                        "r": 0,
+                        "g": 0,
+                        "b": 0,
+                        "a": 1
+                    },
+                    "ShadowStrength": 1,
+                    "ShadowSoftness": 1,
+                    "ShadowPriority": 0,
+                    "AllSortingLayers": true,
+                    "MaxDistance": 10000
+                }
+            }
+        }
+    ]
+}

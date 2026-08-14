@@ -3,10 +3,10 @@ using namespace CometEngine;
 namespace Tweeny
 {
     /// <summary>
-    /// Evaluates every built-in easing curve. The formulas are ported verbatim from DOTween, which in turn
-    /// derives most of them from Robert Penner's equations, so a tween authored against DOTween produces the
-    /// same motion here. Compound assignments have been expanded into explicit statements because the C#
-    /// originals rely on assignment-expression evaluation order.
+    /// Evaluates every built-in easing curve. Most of the formulas are Robert Penner's equations, which are
+    /// the ones every other tweening library uses too, so motion authored elsewhere reads the same here.
+    /// Compound assignments are written out as explicit statements: the published forms lean on
+    /// assignment-expression evaluation order, which is not worth relying on.
     /// </summary>
     namespace EaseManager
     {

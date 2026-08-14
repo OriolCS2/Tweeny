@@ -86,8 +86,8 @@ namespace Tweeny
         return tween;
     }
 
-    // Camera.aspectRatio is read-only in Comet, so there is no Aspect shortcut: DOTween's DOAspect has
-    // nothing to write to here.
+    // Camera.aspectRatio is read-only in Comet, so there is deliberately no Aspect shortcut: there is
+    // nothing to write to.
 
     /// <summary>Shakes a camera, settling back where it started.</summary>
     /// <param name="target">The camera's transform.</param>

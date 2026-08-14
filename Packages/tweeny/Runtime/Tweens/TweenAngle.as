@@ -16,9 +16,9 @@ namespace Tweeny
     /// <summary>
     /// Animates a rotation expressed as a scalar angle in degrees.
     ///
-    /// This is the 2D-native replacement for DOTween's quaternion rotation family. DOTween itself uses a
-    /// scalar angle for its only genuinely 2D targets (Rigidbody2D and UIToolkit), so this follows the
-    /// same shape rather than dragging quaternions into a 2D engine's public API.
+    /// Comet is a 2D engine, so rotation is one number and every rotation shortcut goes through this class.
+    /// Keeping it scalar is what makes RotateMode meaningful: a quaternion cannot express "turn two and a
+    /// half times", because it only knows where you end up, not how you got there.
     /// </summary>
     class TweenAngle : ITween, TweenCore
     {
