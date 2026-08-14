@@ -159,7 +159,11 @@ a:hover { text-decoration: underline; }
   display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); gap: 3rem;
   align-items: start;
 }
-.shell.wide { grid-template-columns: minmax(0, 1fr); max-width: 68rem; }
+/* Without a sidebar there is nothing to align the text against, so the reading column is centred in the
+   page instead of sitting against the left edge of a much wider box. Full-bleed blocks (cards, the hero)
+   opt out and use the whole width. */
+.shell.wide { grid-template-columns: minmax(0, 1fr); max-width: 58rem; }
+.shell.wide main > * { margin-left: auto; margin-right: auto; }
 
 .sidebar {
   position: sticky; top: 3.5rem;
@@ -282,15 +286,18 @@ p.caption { font-size: .88rem; color: var(--ink-2); margin-bottom: .5rem; }
 
 /* ---- landing ------------------------------------------------------------------------------------- */
 
-.hero { padding: 3.5rem 0 1rem; }
+.hero { padding: 3.5rem 0 1.5rem; text-align: center; }
 .hero .eyebrow {
   font: 600 .7rem/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase;
   color: var(--accent-ink); margin: 0 0 .9rem;
 }
 .hero h1 { font-size: clamp(2.4rem, 6vw, 3.4rem); margin-bottom: 1rem; }
-.hero .tagline { font-size: 1.18rem; color: var(--ink-2); max-width: 40rem; margin: 0 0 1.75rem; }
+.hero .tagline {
+  font-size: 1.15rem; color: var(--ink-2); max-width: 40rem; margin: 0 auto 1rem;
+}
+.hero .tagline:last-of-type { margin-bottom: 1.75rem; }
 
-.cta { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 2rem; }
+.cta { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 2rem; justify-content: center; }
 .btn {
   display: inline-flex; align-items: center; gap: .4rem;
   padding: .55rem 1.05rem; border-radius: var(--radius); font-size: .92rem; font-weight: 560;
@@ -300,7 +307,7 @@ p.caption { font-size: .88rem; color: var(--ink-2); margin-bottom: .5rem; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn.primary:hover { background: var(--accent-ink); border-color: var(--accent-ink); }
 
-.badges { display: flex; flex-wrap: wrap; gap: .45rem; }
+.badges { display: flex; flex-wrap: wrap; gap: .45rem; justify-content: center; }
 .badges span {
   font: 500 .78rem/1 var(--font-sans); color: var(--ink-2);
   border: 1px solid var(--line); border-radius: 999px; padding: .35rem .7rem; background: var(--surface);

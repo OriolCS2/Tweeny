@@ -1,6 +1,6 @@
 # Tweeny
 
-A complete tweening and animation engine for CometEngine.
+A complete tweening and animation engine for [CometEngine](https://www.cometengine.org).
 
 Tweeny animates anything you can read and write: positions, rotations, scales, colours, alpha, UI, audio,
 and any value of your own. It ships easings, sequences, paths, punch and shake, callbacks, coroutine
@@ -24,12 +24,8 @@ intro.AppendCallback(TweenCallback(this.OnIntroDone));
 
 ## Setup
 
-Import the package. That is the whole setup.
+Import the [package](https://www.cometengine.org/marketplace/tweeny).
 
-Tweeny registers itself through a project setting, so the moment the package is in your project the engine
-creates its runner at play start. There is no prefab to place, no manager to add to a scene and no
-initialisation call. Open **Project Settings > TweenySettings** to change the defaults (easing, loop type,
-auto-kill, time scale and so on).
 
 ## What is in the box
 
@@ -49,30 +45,12 @@ auto-kill, time scale and so on).
 
 ## How the API reads
 
-**Shortcuts take their target as the first argument.** AngelScript has no extension methods, so a shortcut
-is a free function in the `Tweeny` namespace: `Move(transform, ...)`, `Tint(renderer, ...)`,
-`Fade(renderer, ...)`. There is no prefix on any of them — the namespace already does that job, so
-`Tweeny::Move` is unambiguous on its own.
+**Shortcuts take their target as the first argument.** Free function in the `Tweeny` namespace: `Move(transform, ...)`, `Tint(renderer, ...)`,
+`Fade(renderer, ...)`.
 
 **Everything after the shortcut is a chained setter.** `SetEase`, `SetLoops`, `SetDelay`, `SetRelative`,
 `SetSpeedBased`, `SetAutoKill`, `SetUpdate`, `SetId`, `SetTarget`, `SetLink`, `From`, `OnComplete` and the
 rest all return the tween, so a whole animation is one statement.
-
-**Rotation is a scalar angle.** Comet is a 2D engine, so `Rotate(transform, degrees, duration)` takes a
-number of degrees rather than a quaternion — which is also what makes `RotateMode::FastBeyond360` possible.
-
-**Colour shortcuts are named `Tint`, not `Color`.** `Color` is already a Comet type, and a function of the
-same name would make every file that imports both namespaces ambiguous.
-
-Three things are deliberately absent, each for a concrete reason:
-
-- **Object pooling.** Pools exist to dodge a tracing garbage collector. AngelScript is reference counted, so
-  a finished tween is released the moment the last handle drops. A pool would buy nothing here and would
-  bring its worst footgun: a recycled tween that reports itself alive while being a different animation.
-- **`await`-style asynchrony.** AngelScript has no equivalent. The functionality does not disappear: use
-  `OnComplete`, or wait inside a coroutine with `Yield(WaitForCompletion(tween))`.
-- **Generic plugins.** AngelScript has no script-side generics. Write a `To` with your own getter and setter
-  instead; that is the extension point, and it is the same one the built-in shortcuts use.
 
 ## Getting a value moving
 
@@ -91,7 +69,7 @@ To(FloatGetter(this.GetHealth), FloatSetter(this.SetHealth), 100.0f, 2.0f)
 
 **Tweeny > Tweeny Inspector** in the main menu opens a window listing every live tween with its progress and
 state, with per-tween play, pause, rewind, complete and kill. The preview button runs the tweens inside the
-editor without entering play mode and puts every target back where it was when you stop.
+editor without entering play mode.
 
 ## Licence
 

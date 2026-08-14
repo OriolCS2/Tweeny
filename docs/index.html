@@ -6,7 +6,7 @@
 <title>Tweeny — animation for CometEngine</title>
 <meta name="description" content="Tweeny is a complete tweening and animation engine for CometEngine: easings, sequences, paths, effects, coroutine waits and a no-code component.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b4bdb'/><circle cx='23' cy='9' r='3' fill='white'/></svg>">
-<link rel="stylesheet" href="assets/site.css?v=3">
+<link rel="stylesheet" href="assets/site.css?v=4">
 </head>
 <body>
 
@@ -16,6 +16,7 @@
     <a href="index.html" aria-current="page">Overview</a>
     <a href="guide.html">Guide</a>
     <a href="reference.html">Reference</a>
+    <a href="https://www.cometengine.org">CometEngine</a>
     <a href="https://github.com/OriolCS2/Tweeny">GitHub</a>
   </nav>
 </header>
@@ -31,10 +32,14 @@
     your own. It handles the easing, the looping, the sequencing and the cleanup, so animation stops being
     something you hand-roll in <code>Update</code>.
   </p>
+  <p class="tagline">
+    It is a package for <a href="https://www.cometengine.org">CometEngine</a>, written in AngelScript.
+  </p>
   <div class="cta">
-    <a class="btn primary" href="guide.html">Read the guide</a>
+    <a class="btn primary" href="https://www.cometengine.org/marketplace/tweeny">Get it on the marketplace</a>
+    <a class="btn" href="guide.html">Read the guide</a>
     <a class="btn" href="reference.html">API reference</a>
-    <a class="btn" href="https://github.com/OriolCS2/Tweeny">Source</a>
+    <a class="btn" href="https://github.com/OriolCS2/Tweeny">Source on GitHub</a>
   </div>
   <div class="badges">
     <span>38 easing curves</span>
@@ -59,9 +64,16 @@ Move(transform, Vector2(5.0f, 0.0f), 1.0f)
 <h2 id="install">Install</h2>
 
 <p>
-  Import the package into your CometEngine project. That is the whole setup: there is no manager prefab to
-  place, no script to register and no initialisation call. Tweeny registers itself through a project setting,
-  so the engine creates its runner at play start the moment the package is present.
+  Get Tweeny from the
+  <a href="https://www.cometengine.org/marketplace/tweeny">CometEngine marketplace</a>, or clone
+  <a href="https://github.com/OriolCS2/Tweeny">the repository</a> and copy
+  <code>Packages/tweeny</code> into your project.
+</p>
+
+<p>
+  Importing it is the whole setup: there is no manager prefab to place, no script to register and no
+  initialisation call. Tweeny registers itself through a project setting, so the engine creates its runner at
+  play start the moment the package is present.
 </p>
 
 <p>
@@ -150,10 +162,14 @@ Move(transform, Vector2(5.0f, 0.0f), 1.0f)
 <footer class="site">
   <div class="inner">
     <div>Tweeny is MIT licensed.</div>
-    <div>Built for <a href="https://github.com/OriolCS2/CometEngine">CometEngine</a> by Oriol Capdevila.</div>
+    <div>
+      A package for <a href="https://www.cometengine.org">CometEngine</a> &middot;
+      <a href="https://www.cometengine.org/marketplace/tweeny">Marketplace</a> &middot;
+      <a href="https://github.com/OriolCS2/Tweeny">Repository</a>
+    </div>
   </div>
 </footer>
 
-<script src="assets/site.js?v=3"></script>
+<script src="assets/site.js?v=4"></script>
 </body>
 </html>
