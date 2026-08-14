@@ -54,6 +54,9 @@ class DemoHost : CometBehaviour
     private bool waitForTweens = false;
     private bool advancing = false;
     private array<Entity@> spawned;
+    /// The renderer Spawn just made. Adding a behaviour does not make it findable through Get in the same
+    /// frame, so a demo that needs the renderer has to take the handle Add gave back.
+    private TextureRectRenderer@ lastRenderer;
 
     void Update()
     {
@@ -61,8 +64,18 @@ class DemoHost : CometBehaviour
         // demo is on screen: a scene loaded out of a packed build does not report a usable build index, and
         // the immutable scene this host lives in has none at all.
         if (currentIndex < 0) {
+            // Survive the scene changes this tour is built on. The director asks for this too, but in the
+            // editor the request is ignored until play mode is actually running, and a project setting's
+            // OnStart is too early for that -- so the host would be destroyed by its own first load.
+            entity.MakeImmutable();
+
+            // Load the first demo scene rather than building into whichever scene happened to be open. Press
+            // Play from anywhere and the tour still starts at the beginning, in a scene that has the camera
+            // and light the demos are drawn with.
             currentIndex = 0;
-            BuildSceneContent(0);
+            advancing = true;
+            loadWait = 0.0f;
+            CometEngine::SceneManagement::SceneManager::LoadScene(0);
             return;
         }
 
@@ -130,44 +143,30 @@ class DemoHost : CometBehaviour
         whiteTextureResolved = true;
 
         // Built straight from the file rather than through Assets::Load, which resolves content addresses
-        // and not paths: the demo texture is a loose file with no address assigned to it.
-        // Prefer the imported asset, which has gone through the texture pipeline and has real pixel data.
-        // Building one straight from the file works as a fallback but samples black, so the tint would be
-        // lost; either way the object is visible against the light background.
-        @whiteTexture = cast<Texture2D@>(Assets::Load("white", ResourceType::TEXTURE));
-        if (whiteTexture is null) {
-            @whiteTexture = Texture2D::Create(Texture2DDefinition("Assets/Demo/white.png"));
-        }
-        if (whiteTexture !is null) {
-            // Creation kicks off an async upload. Without waiting, the first frames draw with no texture
-            // bound at all, which multiplies every tint down to black.
-            whiteTexture.WaitForLoad();
-        }
+        // and not paths: the demo texture is a loose file with no address assigned to it. Pixels are asked
+        // for as editable so the contents can be overwritten below.
+        @whiteTexture = Texture2D::Create(Texture2DDefinition("Assets/Demo/white.png", true));
         if (whiteTexture is null) {
             Debug::LogWarning("[Tweeny demo] the white texture was not found; demo objects will be invisible");
+            return null;
+        }
+
+        // Creation kicks off an async upload. Without waiting, the first frames draw with no texture bound
+        // at all, which multiplies every tint down to black.
+        whiteTexture.WaitForLoad();
+
+        // Then paint it white outright. Loading a file this way skips the importer, so what lands in the
+        // texture depends on how the raw image decodes; every demo tint is multiplied by these pixels, so
+        // they have to be a known opaque white rather than whatever the file happened to give.
+        array<CometEngine::Color>@ pixels = whiteTexture.GetPixels();
+        if (pixels !is null && pixels.length() > 0) {
+            for (uint i = 0; i < pixels.length(); i++) {
+                pixels[i] = CometEngine::Color(1.0f, 1.0f, 1.0f, 1.0f);
+            }
+            whiteTexture.SetPixels(pixels);
+            whiteTexture.Apply();
         }
         return whiteTexture;
-    }
-
-    /// <summary>
-    /// Gives the freshly loaded scene a camera. The demo scenes are empty on disk, so without this there
-    /// is nothing to render from and the view stays blank.
-    /// </summary>
-    private void EnsureCamera()
-    {
-        Entity@ cameraEntity = Entity::Create("[demo camera]");
-        if (cameraEntity is null) {
-            return;
-        }
-        Transform::Get(cameraEntity).position = Vector3(0.0f, 0.0f, -10.0f);
-        Camera@ camera = Camera::Add(cameraEntity);
-        if (camera !is null) {
-            camera.size = 10.0f;
-            camera.backgroundColor = CometEngine::Color(0.85f, 0.87f, 0.90f, 1.0f);
-            // A behaviour added by code never runs the editor's Reset, so its culling mask starts empty and
-            // the camera would draw its background and nothing else. -1 is every layer.
-            camera.cullingMask = LayerMask(-1);
-        }
     }
 
     /// <summary>
@@ -176,8 +175,10 @@ class DemoHost : CometBehaviour
     /// <param name="name">Name given to the entity.</param>
     /// <param name="position">Where to put it.</param>
     /// <param name="colour">The sprite renderer's tint.</param>
+    /// <param name="scale">How big to draw it. The default suits demos with a handful of objects; the
+    /// easing gallery packs thirty-eight rows in and passes something smaller.</param>
     /// <returns>Returns the new entity.</returns>
-    private Entity@ Spawn(const string&in name, Vector2 position, Color colour)
+    private Entity@ Spawn(const string&in name, Vector2 position, Color colour, float scale = 1.5f)
     {
         Entity@ entity = Entity::Create(name);
         if (entity is null) {
@@ -185,17 +186,17 @@ class DemoHost : CometBehaviour
         }
         Transform@ tr = Transform::Get(entity);
         tr.position = Vector3(position.x, position.y, 0.0f);
-        tr.localScale = Vector3(0.6f, 0.6f, 1.0f);
+        tr.localScale = Vector3(scale, scale, 1.0f);
 
-        TextureRectRenderer@ renderer = TextureRectRenderer::Add(entity);
-        if (renderer !is null) {
+        @lastRenderer = TextureRectRenderer::Add(entity);
+        if (lastRenderer !is null) {
             // Every demo object shares one plain white texture and gets its look purely from the tint. The
             // rect has to be set explicitly: a renderer with the default empty rect draws nothing.
-            @renderer.texture = whiteTexture;
-            renderer.rectUnitType = RectUnitType::NORMALIZED_0_1;
-            renderer.rectNormalized = Rectf(0.0f, 0.0f, 1.0f, 1.0f);
-            renderer.pivot = PivotType::MIDDLE;
-            renderer.color = colour;
+            @lastRenderer.texture = whiteTexture;
+            lastRenderer.rectUnitType = RectUnitType::NORMALIZED_0_1;
+            lastRenderer.rectNormalized = Rectf(0.0f, 0.0f, 1.0f, 1.0f);
+            lastRenderer.pivot = PivotType::MIDDLE;
+            lastRenderer.color = colour;
         }
         spawned.insertLast(entity);
         return entity;
@@ -210,9 +211,9 @@ class DemoHost : CometBehaviour
         if (capturedThisScene >= captureFramesPerScene) {
             return;
         }
-        // Capturing a frame costs far more than rendering one, so real time is useless as a clock here:
-        // the animation would leap between shots. Instead the game runs slowed down and frames are taken
-        // on SCALED time, which makes each captured frame exactly one playback frame apart.
+        // Capturing a frame costs far more than rendering one, so real time is useless as a clock here: the
+        // animation would leap between shots. Instead the game runs slowed down and frames are taken on
+        // SCALED time, which makes each captured frame exactly one playback frame apart.
         captureAccumulator += Time::GetDeltaTime();
         float interval = 1.0f / (captureFps <= 0.0f ? 20.0f : captureFps);
         if (captureAccumulator < interval) {
@@ -263,7 +264,8 @@ class DemoHost : CometBehaviour
         capturedThisScene = 0;
         captureAccumulator = 0.0f;
 
-        EnsureCamera();
+        // Nothing is added for the camera or the light: every demo scene ships with a Main Camera and a
+        // Global Light of its own, and a second camera in the same scene fights the first for the viewport.
 
         string sceneName = (index >= 0 && index < int(tour.length())) ? tour[uint(index)] : ("scene " + index);
         Debug::Log("[Tweeny demo] " + sceneName);
@@ -299,8 +301,10 @@ class DemoHost : CometBehaviour
         };
 
         for (uint i = 0; i < eases.length(); i++) {
-            float y = 7.0f - float(i) * 0.5f;
-            Entity@ entity = Spawn("ease" + i, Vector2(-9.0f, y), Hue(int(i), int(eases.length())));
+            // Spread the whole set evenly over the camera's height instead of stepping down by a fixed
+            // amount, which used to run the last rows off the bottom of the view.
+            float y = 6.3f - float(i) * (12.6f / float(eases.length() - 1));
+            Entity@ entity = Spawn("ease" + i, Vector2(-9.0f, y), Hue(int(i), int(eases.length())), 0.45f);
             if (entity is null) {
                 continue;
             }
@@ -426,18 +430,28 @@ class DemoHost : CometBehaviour
     /// Tint and fade on renderers, which is where most of a game's polish actually lives.
     private void BuildRenderers()
     {
-        Entity@ tinted = Spawn("Tint", Vector2(-4.0f, 2.0f), Color(1.0f, 1.0f, 1.0f, 1.0f));
-        TextureRectRenderer@ tintRenderer = TextureRectRenderer::Get(tinted);
-        Tweeny::Tint(tintRenderer, Color(0.9f, 0.2f, 0.3f, 1.0f), 1.5f).SetLoops(-1, LoopType::Yoyo);
+        // Each renderer is taken from lastRenderer rather than looked up again: a behaviour added this
+        // frame is not findable through Get yet, and tweening a null renderer would take the tour down.
+        Spawn("Tint", Vector2(-4.0f, 2.0f), Color(1.0f, 1.0f, 1.0f, 1.0f));
+        TextureRectRenderer@ tintRenderer = lastRenderer;
+        if (tintRenderer !is null) {
+            Tweeny::Tint(tintRenderer, Color(0.9f, 0.2f, 0.3f, 1.0f), 1.5f).SetLoops(-1, LoopType::Yoyo);
+        }
 
-        Entity@ faded = Spawn("Fade", Vector2(0.0f, 2.0f), Color(0.3f, 0.9f, 0.8f, 1.0f));
-        TextureRectRenderer@ fadeRenderer = TextureRectRenderer::Get(faded);
-        Tweeny::Fade(fadeRenderer, 0.0f, 1.5f).SetLoops(-1, LoopType::Yoyo);
+        Spawn("Fade", Vector2(0.0f, 2.0f), Color(0.3f, 0.9f, 0.8f, 1.0f));
+        TextureRectRenderer@ fadeRenderer = lastRenderer;
+        if (fadeRenderer !is null) {
+            Tweeny::Fade(fadeRenderer, 0.0f, 1.5f).SetLoops(-1, LoopType::Yoyo);
+        }
 
         Entity@ both = Spawn("Tint and move", Vector2(4.0f, 2.0f), Color(0.4f, 0.5f, 0.95f, 1.0f));
-        TextureRectRenderer@ bothRenderer = TextureRectRenderer::Get(both);
-        Tweeny::Tint(bothRenderer, Color(1.0f, 0.9f, 0.2f, 1.0f), 1.0f).SetLoops(-1, LoopType::Yoyo);
-        Tweeny::MoveY(Transform::Get(both), -2.0f, 1.0f).SetLoops(-1, LoopType::Yoyo).SetEase(Ease::InOutSine);
+        TextureRectRenderer@ bothRenderer = lastRenderer;
+        if (bothRenderer !is null) {
+            Tweeny::Tint(bothRenderer, Color(1.0f, 0.9f, 0.2f, 1.0f), 1.0f).SetLoops(-1, LoopType::Yoyo);
+        }
+        if (both !is null) {
+            Tweeny::MoveY(Transform::Get(both), -2.0f, 1.0f).SetLoops(-1, LoopType::Yoyo).SetEase(Ease::InOutSine);
+        }
     }
 
     /// Playback control: pause, rewind, flip and filtered kills, driven on a timer.

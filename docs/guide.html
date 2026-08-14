@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide — Tweeny</title>
+<meta name="description" content="The Tweeny guide: your first tween, easing, loops, sequences, effects, paths, shortcuts, coroutines and the no-code component.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b4bdb'/><circle cx='23' cy='9' r='3' fill='white'/></svg>">
+<link rel="stylesheet" href="assets/site.css?v=3">
+</head>
+<body>
+
+<header class="topbar">
+  <button class="navtoggle" type="button" aria-label="Toggle sections" aria-expanded="true">&#9776;</button>
+  <a class="brand" href="index.html"><span class="mark"></span> Tweeny <span class="version">0.1.0</span></a>
+  <nav class="topnav">
+    <a href="index.html">Overview</a>
+    <a href="guide.html" aria-current="page">Guide</a>
+    <a href="reference.html">Reference</a>
+    <a href="https://github.com/OriolCS2/Tweeny">GitHub</a>
+  </nav>
+</header>
+
+<div class="shell">
+
+<nav class="sidebar" aria-label="Sections">
+  <h2>Getting started</h2>
+  <ul>
+    <li><a href="#first-tween">Your first tween</a></li>
+    <li><a href="#anatomy">Anatomy of a tween</a></li>
+    <li><a href="#defaults">Project defaults</a></li>
+  </ul>
+  <h2>Shaping the motion</h2>
+  <ul>
+    <li><a href="#easing">Easing</a></li>
+    <li><a href="#loops">Loops and direction</a></li>
+    <li><a href="#timing">Delay, relative, speed-based</a></li>
+    <li><a href="#from">Starting somewhere else</a></li>
+  </ul>
+  <h2>Driving it</h2>
+  <ul>
+    <li><a href="#callbacks">Callbacks</a></li>
+    <li><a href="#control">Playback control</a></li>
+    <li><a href="#finding">Finding tweens again</a></li>
+  </ul>
+  <h2>Composition</h2>
+  <ul>
+    <li><a href="#sequences">Sequences</a></li>
+    <li><a href="#together">Two things at once</a></li>
+  </ul>
+  <h2>Motion recipes</h2>
+  <ul>
+    <li><a href="#effects">Punch, shake and jump</a></li>
+    <li><a href="#paths">Paths</a></li>
+  </ul>
+  <h2>Targets</h2>
+  <ul>
+    <li><a href="#shortcuts">Shortcuts</a></li>
+    <li><a href="#own-values">Your own values</a></li>
+    <li><a href="#strings">Text and numbers</a></li>
+  </ul>
+  <h2>Integration</h2>
+  <ul>
+    <li><a href="#coroutines">Coroutines</a></li>
+    <li><a href="#links">Linking to an entity</a></li>
+    <li><a href="#no-code">No code at all</a></li>
+    <li><a href="#editor">Editor tools</a></li>
+  </ul>
+  <h2>Notes</h2>
+  <ul>
+    <li><a href="#lifetime">Lifetime and cleanup</a></li>
+    <li><a href="#update-loops">Update loops and time scale</a></li>
+  </ul>
+</nav>
+
+<main>
+
+<h1>Guide</h1>
+<p class="lede">
+  Written front to back. Every snippet assumes <code>using namespace Tweeny;</code> at the top of the file,
+  and compiles against the package as it ships.
+</p>
+
+<h2 id="first-tween">Your first tween</h2>
+
+<p>
+  A tween is created by calling a function that says <em>what</em> to animate, <em>where</em> it should end up
+  and <em>how long</em> it should take. It starts playing immediately and cleans itself up when it finishes.
+</p>
+
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>using namespace Tweeny;
+
+class Door : CometBehaviour
+{
+    void Start()
+    {
+        // Slide two units to the right over half a second.
+        Move(Transform::Get(entity), Vector2(2.0f, 0.0f), 0.5f);
+    }
+}</code></pre>
+</div>
+
+<p>
+  That is the whole thing. There is no manager to add, no update call to write and nothing to dispose of. The
+  package registers its runner through a project setting, so it exists the moment the package is in the
+  project.
+</p>
+
+<h2 id="anatomy">Anatomy of a tween</h2>
+
+<p>
+  Creating a tween returns it, and every setting on it returns the tween again, so an animation reads as one
+  statement. The shape is always the same: <strong>a shortcut, then settings, then callbacks.</strong>
+</p>
+
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>Move(transform, target, 1.0f)      // what, where, how long
+    .SetEase(Ease::OutBack)        // how it accelerates
+    .SetLoops(-1, LoopType::Yoyo)  // how often, and in which direction
+    .SetDelay(0.25f)               // when it starts
+    .SetId("door")                 // how to find it later
+    .OnComplete(TweenCallback(this.OnDoorOpen));</code></pre>
+</div>
+
+<p>
+  Shortcuts take their target as the first argument. AngelScript has no extension methods, so a shortcut is a
+  free function in the <code>Tweeny</code> namespace rather than a method on the object:
+  <code>Move(transform, ...)</code>, not <code>transform.Move(...)</code>.
+</p>
+
+<div class="note">
+  <strong>Position is authoritative</strong>
+  <p>
+    Internally a tween never accumulates. Each frame it works out the absolute position on its timeline and
+    jumps there, which is why seeking, rewinding and sequence playback all land on exactly the same values as
+    playing forward normally.
+  </p>
+</div>
+
+<h2 id="defaults">Project defaults</h2>
+
+<p>
+  <strong>Project Settings &rsaquo; TweenySettings</strong> holds the defaults every new tween starts from:
+  easing curve and its overshoot and period, loop type, auto-kill, auto-play, whether tweens are recycled at
+  scene load, the global time scale and the log level. Setting something on a tween overrides the default for
+  that tween only.
+</p>
+
+<h2 id="easing">Easing</h2>
+
+<p>
+  Easing is the difference between something sliding and something arriving. Tweeny ships thirty-eight
+  curves. <code>In</code> starts slow, <code>Out</code> ends slow, <code>InOut</code> does both;
+  <code>Back</code> overshoots, <code>Elastic</code> springs, <code>Bounce</code> settles,
+  <code>Flash</code> blinks.
+</p>
+
+<h3>Choosing a curve</h3>
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>// A named curve.
+Move(transform, target, 1.0f).SetEase(Ease::OutBounce);
+
+// Back and Elastic take extra shape parameters.
+Move(transform, target, 1.0f).SetEase(Ease::OutBack, 3.0f);
+Move(transform, target, 1.0f).SetEase(Ease::OutElastic, 1.5f, 0.4f);
+
+// Your own function, of type EaseFunc.
+Move(transform, target, 1.0f).SetEase(EaseFunc(this.MyCurve));
+
+// Any curve, sampled in eight discrete steps.
+Move(transform, target, 1.0f)
+    .SetEase(EaseFactory::StopMotion(8, Ease::Linear));</code></pre>
+</div>
+
+<p>
+  A custom curve is any function matching <code>EaseFunc</code>: it receives elapsed time, duration, and the
+  overshoot and period parameters, and returns the eased fraction.
+</p>
+
+<h2 id="loops">Loops and direction</h2>
+
+<p>
+  <code>SetLoops(count)</code> repeats a tween. A count of <code>-1</code> runs forever. The
+  <code>LoopType</code> decides what a repeat means:
+</p>
+
+<div class="scroller">
+<table>
+  <thead><tr><th>Loop type</th><th>What each cycle does</th></tr></thead>
+  <tbody>
+    <tr><td class="api">LoopType::Restart</td><td>Snaps back to the start value and plays forward again.</td></tr>
+    <tr><td class="api">LoopType::Yoyo</td><td>Plays backwards, then forwards, alternating.</td></tr>
+    <tr><td class="api">LoopType::Incremental</td><td>Adds the change again, so each cycle travels further than the last.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Setting a loop</h3>
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>MoveX(transform, 5.0f, 1.0f).SetLoops(-1, LoopType::Yoyo);
+MoveX(transform, 5.0f, 1.0f).SetLoops(4, LoopType::Incremental);
+MoveX(transform, 5.0f, 1.0f).SetLoops(-1, LoopType::Restart);
+
+// Reverse a running tween in place.
+ITween@ t = MoveX(transform, 5.0f, 1.0f);
+t.Flip();</code></pre>
+</div>
+
+<h2 id="timing">Delay, relative and speed-based</h2>
+
+<p>
+  Three settings change what the duration and the destination mean.
+</p>
+
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>// Wait a quarter of a second before starting.
+Move(transform, target, 1.0f).SetDelay(0.25f);
+
+// The destination is an offset from wherever the value starts,
+// not an absolute position.
+MoveX(transform, 3.0f, 1.0f).SetRelative(true);
+
+// The third argument stops being a duration and becomes a speed,
+// in units per second. Travel time follows from the distance.
+MoveX(transform, 20.0f, 4.0f).SetSpeedBased(true);
+
+// Round the animated value to whole numbers as it goes.
+MoveX(transform, 10.0f, 1.0f).SetSnapping(true);</code></pre>
+</div>
+
+<h2 id="from">Starting somewhere else</h2>
+
+<p>
+  <code>From</code> turns a tween around: the value you gave becomes the <em>start</em>, and whatever the
+  target already held becomes the end. It is how entrances are written — fade in from transparent, drop in
+  from above — without having to set the starting state by hand first.
+</p>
+
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>// Slide in from three units above, ending where the object already is.
+Move(transform, Vector2(0.0f, 3.0f), 0.5f).From(true);
+
+// Fade in from fully transparent.
+Fade(renderer, 1.0f, 0.4f).From(0.0f);
+
+// Set up the from value without snapping to it immediately.
+Fade(renderer, 1.0f, 0.4f).From(0.0f, false);</code></pre>
+</div>
+
+<h2 id="callbacks">Callbacks</h2>
+
+<p>
+  Eight lifecycle callbacks, each taking a <code>TweenCallback</code>. They fire in a fixed order, so
+  <code>OnStepComplete</code> always precedes the <code>OnComplete</code> of the final loop.
+</p>
+
+<div class="scroller">
+<table>
+  <thead><tr><th>Callback</th><th>When it fires</th></tr></thead>
+  <tbody>
+    <tr><td class="api">OnStart</td><td>Once, the first time the tween actually updates — after any delay.</td></tr>
+    <tr><td class="api">OnPlay</td><td>Every time it starts or resumes playing.</td></tr>
+    <tr><td class="api">OnPause</td><td>Every time it is paused.</td></tr>
+    <tr><td class="api">OnRewind</td><td>Every time it is rewound to the beginning.</td></tr>
+    <tr><td class="api">OnUpdate</td><td>Every frame the value changes.</td></tr>
+    <tr><td class="api">OnStepComplete</td><td>At the end of each loop cycle.</td></tr>
+    <tr><td class="api">OnComplete</td><td>Once, when every loop has finished.</td></tr>
+    <tr><td class="api">OnKill</td><td>Once, when the tween is destroyed, however that happens.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>Move(transform, target, 2.0f)
+    .OnStart(TweenCallback(this.OnDoorStarts))
+    .OnStepComplete(TweenCallback(this.OnDoorStep))
+    .OnComplete(TweenCallback(this.OnDoorOpen));
+
+void OnDoorOpen() { Debug::Log("open"); }</code></pre>
+</div>
+
+<h2 id="control">Playback control</h2>
+
+<p>
+  Every tween can be played, paused, rewound, restarted, completed, flipped and seeked. Keep the handle to
+  drive it, and turn auto-kill off if you want it to survive past its own completion.
+</p>
+
+<h3>Driving a tween by hand</h3>
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>TweenVector3@ t = Move(transform, target, 2.0f).SetAutoKill(false);
+
+t.Pause();
+t.Play();
+t.TogglePause();
+t.PlayBackwards();
+t.Rewind();               // back to the start, delay included
+t.SmoothRewind();         // rewind from wherever it is, easing out
+t.Restart();
+t.Flip();                 // swap start and end, mid-flight
+t.Goto(1.0f, true);       // jump to one second in and keep playing
+t.Complete(false);        // snap to the end; true also fires callbacks
+t.Kill(false);            // stop and release; true completes it first</code></pre>
+</div>
+
+<p>
+  The same tween also reports on itself: <code>IsPlaying</code>, <code>IsComplete</code>,
+  <code>IsBackwards</code>, <code>GetPosition</code>, <code>GetElapsed</code>,
+  <code>GetCompletedLoops</code>, <code>GetFullDuration</code> and more.
+</p>
+
+<h2 id="finding">Finding tweens again</h2>
+
+<p>
+  You do not have to keep handles. Tag a tween with an id, or look it up by the object it animates, and drive
+  whole groups at once. Every one of these returns how many tweens it touched.
+</p>
+
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>MoveX(transform, 5.0f, 1.0f).SetId("intro");
+
+Pause("intro");
+Kill("intro");
+Kill(transform);            // everything animating this object
+Restart(transform);
+
+bool busy = IsTweening(transform);
+int  live = TotalActiveTweens();
+
+PauseAll();
+KillAll(true);              // true completes them first
+SetTimeScale(0.25f);        // slow motion for every tween at once</code></pre>
+</div>
+
+<h2 id="sequences">Sequences</h2>
+
+<p>
+  A sequence is a timeline you assemble from tweens, intervals and callbacks. It behaves like a tween itself:
+  it eases, loops, takes callbacks, and can be paused or seeked as one thing — and sequences nest inside
+  sequences.
+</p>
+
+<div class="scroller">
+<table>
+  <thead><tr><th>Builder</th><th>Where it puts the tween</th></tr></thead>
+  <tbody>
+    <tr><td class="api">Append</td><td>After everything added so far.</td></tr>
+    <tr><td class="api">Join</td><td>Alongside the last thing appended, starting at the same moment.</td></tr>
+    <tr><td class="api">Prepend</td><td>Before everything else, pushing the rest later.</td></tr>
+    <tr><td class="api">Insert</td><td>At an exact time on the timeline.</td></tr>
+    <tr><td class="api">AppendInterval</td><td>Empty time, to space things out.</td></tr>
+    <tr><td class="api">AppendCallback</td><td>A function call at that point on the timeline.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Building a sequence</h3>
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>TweenSequence@ intro = Sequence();
+
+intro.Append(Move(transform, Vector2(0.0f, 3.0f), 0.5f));
+intro.Join(Tint(renderer, Color(1, 0.3f, 0.3f, 1), 0.5f));  // with the move
+intro.AppendInterval(0.2f);
+intro.Append(Scale(transform, 1.5f, 0.3f));
+intro.Insert(0.0f, Fade(renderer, 1.0f, 1.0f));             // at t = 0
+intro.AppendCallback(TweenCallback(this.OnIntroDone));
+
+intro.SetLoops(2, LoopType::Restart)
+   .SetEase(Ease::InOutSine);</code></pre>
+</div>
+
+<h2 id="together">Two things at once</h2>
+
+<p>
+  To animate two properties of the same object together you do not need a sequence at all. Tweens are
+  independent, so two of them on one target simply run side by side.
+</p>
+
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>// Grows and reddens at the same time, no sequence involved.
+Scale(transform, 1.5f, 0.4f);
+Tint(renderer, Color(1, 0.2f, 0.2f, 1), 0.4f);</code></pre>
+</div>
+
+<p>
+  Reach for a sequence when the timing has to be <em>related</em> — one thing after another, a shared pause,
+  or the whole group treated as a single animation you can rewind.
+</p>
+
+<h2 id="effects">Punch, shake and jump</h2>
+
+<p>
+  Impact effects. Punch and shake both return exactly to where they started, so they can be fired on top of
+  whatever else is happening without leaving anything displaced. A shake accepts a seed, so the same shake can
+  be replayed identically — useful in tests and in replays.
+</p>
+
+<h3>Firing an impact</h3>
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>// A directed hit that oscillates back to rest.
+PunchPosition(transform, Vector2(0.5f, 0.0f), 0.4f);
+PunchScale(transform, Vector2(0.3f, 0.3f), 0.4f, 10, 1.0f);
+
+// Random shaking, optionally reproducible.
+ShakePosition(transform, 0.5f, 2.0f, 14);
+ShakePosition(transform, 0.5f, 2.0f, 14, 90.0f, true, 4242);
+ShakeCamera(cameraTransform, 0.4f, 0.6f);
+
+// An arc to a destination, in two hops.
+Jump(transform, Vector2(8.0f, 0.0f), 3.0f, 2, 1.0f);</code></pre>
+</div>
+
+<p>
+  <code>Jump</code> returns a <code>TweenSequence</code>, because that is what it is: a horizontal move with a
+  series of vertical arcs joined onto it. Everything you can do to a sequence works on it.
+</p>
+
+<h2 id="paths">Paths</h2>
+
+<p>
+  A path moves something through a list of waypoints, either in straight lines or along a smooth curve. The
+  path is measured when the tween starts, so travel happens at a constant speed instead of racing through
+  wherever the waypoints happen to bunch up.
+</p>
+
+<h3>Walking a route</h3>
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>array&lt;Vector2&gt; route = { Vector2(5, 3), Vector2(5, -1), Vector2(-5, -1) };
+
+Path(transform, route, 4.0f, PathType::Linear)
+    .SetClosePath(true);
+
+Path(transform, route, 4.0f, PathType::CatmullRom)
+    .OnWaypointChange(TweenCallbackInt(this.OnWaypoint));
+
+void OnWaypoint(int index) { Debug::Log("reached " + index); }</code></pre>
+</div>
+
+<h2 id="shortcuts">Shortcuts</h2>
+
+<p>
+  Shortcuts are the ready-made tweens for things the engine already has. They cover the transform, every
+  renderer, tilemaps, the camera, lights, audio and the whole UI stack. The
+  <a href="reference.html#shortcuts-transform">reference</a> lists all of them; these are the ones you will
+  reach for daily.
+</p>
+
+<h3>The everyday shortcuts</h3>
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>Move(transform, Vector2(3.0f, 1.0f), 1.0f);
+MoveX(transform, 3.0f, 1.0f);
+LocalMove(transform, Vector2(0.0f, 2.0f), 1.0f);
+Scale(transform, 1.5f, 0.4f);
+ScaleY(transform, 2.0f, 0.4f);
+Rotate(transform, 360.0f, 1.0f);
+
+Tint(renderer, Color(1, 0.4f, 0.2f, 1), 0.5f);
+Fade(renderer, 0.0f, 0.5f);</code></pre>
+</div>
+
+<div class="note">
+  <strong>Why <code>Tint</code> and not <code>Color</code></strong>
+  <p>
+    <code>Color</code> is already a CometEngine type. A function of the same name would make every file that
+    imports both namespaces ambiguous, so the colour shortcut is called <code>Tint</code>.
+  </p>
+</div>
+
+
+<p>
+  Rotation is a single angle in degrees rather than a quaternion, because CometEngine is a 2D engine — and
+  because an angle can express something a rotation cannot. <code>RotateMode::FastBeyond360</code> turns two
+  and a half times; a quaternion only knows where you finish.
+</p>
+
+<h2 id="own-values">Your own values</h2>
+
+<p>
+  Anything you can read and write can be tweened. Hand <code>To</code> a getter and a setter and it will
+  animate a value Tweeny has never heard of — a health bar, a shader parameter, a difficulty curve.
+</p>
+
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>class HealthBar : CometBehaviour
+{
+    private float health = 20.0f;
+
+    private float GetHealth() { return health; }
+    private void SetHealth(float value) { health = value; }
+
+    void Heal()
+    {
+        To(FloatGetter(this.GetHealth), FloatSetter(this.SetHealth), 100.0f, 2.0f)
+            .SetEase(Ease::OutQuint);
+    }
+}</code></pre>
+</div>
+
+<p>
+  There is a <code>To</code> for every value type the package supports — <code>float</code>,
+  <code>int</code>, <code>Vector2</code>, <code>Vector3</code>, <code>Color</code>, <code>Rectf</code> and
+  <code>string</code> — plus <code>ToAlpha</code> for just the alpha channel of a colour and
+  <code>ToAngle</code> for a rotation. This is also the extension point: a shortcut Tweeny does not ship is a
+  <code>To</code> you write once.
+</p>
+
+<h2 id="strings">Text and numbers</h2>
+
+<p>
+  Integer tweens round as they go, so a score counts in whole numbers. String tweens type text out, and can
+  fill the untyped remainder with scrambled characters.
+</p>
+
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>To(IntGetter(this.GetScore), IntSetter(this.SetScore), 1500, 1.5f);
+
+To(StringGetter(this.GetLabel), StringSetter(this.SetLabel), "READY", 1.0f)
+    .SetScramble(ScrambleMode::Uppercase);</code></pre>
+</div>
+
+<h2 id="coroutines">Coroutines</h2>
+
+<p>
+  Six yield instructions turn a coroutine into a readable script for a cutscene. A tween that gets killed
+  releases whatever is waiting on it, so a coroutine can never be stranded by an animation that went away.
+</p>
+
+<h3>Waiting on a tween</h3>
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>void PlayIntro()
+{
+  Yield(WaitForCompletion(Move(transform, up, 0.6f).SetEase(Ease::OutBack)));
+  Yield(WaitForSeconds(0.2f));
+  Yield(WaitForCompletion(Tint(renderer, gold, 0.4f)));
+  Yield(WaitForElapsedLoops(spinner, 3));
+  Yield(WaitForPosition(runner, 1.5f));
+}</code></pre>
+</div>
+
+<h2 id="links">Linking to an entity</h2>
+
+<p>
+  A tween that outlives what it animates is the most common way tween code goes wrong: the target is
+  destroyed and the tween keeps writing into nothing. Link it to an entity and it follows that entity's fate.
+</p>
+
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>ITween@ t = Move(transform, target, 5.0f);
+SetLink(t, entity, LinkBehaviour::PauseOnDisablePlayOnEnable);</code></pre>
+</div>
+
+<div class="note">
+  <strong>Destruction always kills</strong>
+  <p>
+    Whichever behaviour you choose, a destroyed entity kills the tween. A link that only pauses on disable
+    would otherwise leak the moment the entity is gone.
+  </p>
+</div>
+
+<h2 id="no-code">No code at all</h2>
+
+<p>
+  Add a <code>TweenyAnimation</code> component to an entity, choose what to animate and how, and press Play.
+  It covers moves, scales, rotations, tints, fades, punches and shakes, with the same easing, delay and
+  looping options as the scripting API — and it can start on its own or be triggered from code.
+</p>
+
+
+<h2 id="editor">Editor tools</h2>
+
+<p>
+  <strong>Tweeny &rsaquo; Tweeny Inspector</strong> in the main menu opens a window listing every live tween
+  with its id, target, progress and state, and gives each one play, pause, rewind, complete and kill buttons.
+</p>
+
+<p>
+  The same window previews animations <em>without entering play mode</em>. It records the state of every
+  target before it starts and puts all of it back when you stop, so previewing never leaves a scene dirty.
+</p>
+
+<h2 id="lifetime">Lifetime and cleanup</h2>
+
+<p>
+  By default a tween kills itself when it completes, and you never think about it again. Turn that off with
+  <code>SetAutoKill(false)</code> when you want to replay or rewind the same tween later — and remember that
+  such a tween now lives until you kill it.
+</p>
+
+<p>
+  There is no object pool. Pools exist to dodge a tracing garbage collector; AngelScript is reference
+  counted, so a finished tween is released the moment the last handle drops. A pool would buy nothing here
+  and would bring its worst failure mode: a recycled tween that reports itself alive while being a completely
+  different animation.
+</p>
+
+<h2 id="update-loops">Update loops and time scale</h2>
+
+<p>
+  Tweens run on the normal update by default. <code>SetUpdate</code> moves one to the fixed or late phase, and
+  the <code>independent</code> flag makes a tween ignore the engine's time scale — which is how a pause menu
+  keeps animating while the game is frozen.
+</p>
+
+<div class="code">
+  <header>angelscript <button class="copy" type="button">Copy</button></header>
+<pre><code>Move(transform, target, 1.0f).SetUpdate(UpdateType::Fixed);
+Move(transform, target, 1.0f).SetUpdate(true);                    // time-scale independent
+Move(transform, target, 1.0f).SetUpdate(UpdateType::Late, true);
+
+Move(transform, target, 1.0f).SetTimeScale(0.5f);   // this tween, at half speed
+SetTimeScale(0.5f);                                 // every tween, at half speed</code></pre>
+</div>
+
+
+<hr>
+
+<p>
+  That is the whole feature set. For exact signatures, defaults and every shortcut in the package, carry on to
+  the <a href="reference.html">API reference</a>.
+</p>
+
+</main>
+</div>
+
+<footer class="site">
+  <div class="inner">
+    <div>Tweeny is MIT licensed.</div>
+    <div>Built for <a href="https://github.com/OriolCS2/CometEngine">CometEngine</a> by Oriol Capdevila.</div>
+  </div>
+</footer>
+
+<script src="assets/site.js?v=3"></script>
+</body>
+</html>

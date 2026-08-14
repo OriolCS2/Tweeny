@@ -1,6 +1,6 @@
 {
     "Name": "06_Renderers",
-    "Path": "Scenes\/06_Renderers",
+    "Path": "Scenes/06_Renderers",
     "RootID": "6160410093379210524",
     "Entities": [
         {
@@ -44,14 +44,14 @@
                     "Enabled": true,
                     "CullingMask": 2147483647,
                     "BackCol": {
-                        "r": 0.192,
-                        "g": 0.302,
-                        "b": 0.475,
-                        "a": 1
+                        "r": 0.09,
+                        "g": 0.1,
+                        "b": 0.13,
+                        "a": 1.0
                     },
                     "FarPlane": 200,
                     "NearPlane": 0,
-                    "Size": 5,
+                    "Size": 6.5,
                     "PixelPerfect": false,
                     "PixelPerfectPPU": 100,
                     "PixelPerfectRefResX": 320,
@@ -61,7 +61,7 @@
                     "PixelPerfectCropX": false,
                     "PixelPerfectCropY": false,
                     "PixelPerfectStretchFill": false,
-                    "PostProcessing": true,
+                    "PostProcessing": false,
                     "Depth": -1,
                     "Viewport": {
                         "x": 0,

@@ -38,9 +38,15 @@ and leaves the test report behind. There are just under five hundred checks acro
 
 ## Documentation
 
-The full guide, with code examples for every feature, lives at
-[oriolcs2.github.io/Tweeny](https://oriolcs2.github.io/Tweeny) and is served from the `docs/` folder.
-Enable it under **Settings › Pages › Deploy from a branch › main › /docs**.
+The documentation site lives at [oriolcs2.github.io/Tweeny](https://oriolcs2.github.io/Tweeny) and is served
+from the `docs/` folder. Enable it under **Settings › Pages › Deploy from a branch › main › /docs**.
+
+| Page | What it holds |
+|---|---|
+| `docs/index.html` | Overview: what Tweeny is, how to install it, what it can do. |
+| `docs/guide.html` | The guide, written front to back, with a runnable example per feature. |
+| `docs/reference.html` | Every function, setter, enum and callback in the package. |
+| `docs/assets/` | The shared stylesheet and the small script that colours code and tracks the sidebar. |
 
 ## Licence
 

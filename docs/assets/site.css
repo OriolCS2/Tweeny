@@ -1,0 +1,383 @@
+/* Tweeny documentation site.
+   One stylesheet for every page. Layout is a two-column shell: a sticky sidebar for in-page navigation and
+   a reading column capped at a comfortable measure. Everything below 60rem collapses to a single column. */
+
+:root {
+  color-scheme: light dark;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --page: #ffffff;
+  --surface: #f7f8fa;
+  --surface-2: #eef0f4;
+  --line: #e0e3ea;
+  --line-strong: #c8ccd6;
+
+  --ink: #14161c;
+  --ink-2: #3d4350;
+  --ink-3: #6a7182;
+
+  --accent: #5b4bdb;
+  --accent-ink: #4739bd;
+  --accent-soft: #eeecff;
+
+  --code-bg: #f6f7fb;
+  --code-ink: #21242e;
+  --code-key: #7c3aed;
+  --code-str: #0a7d5a;
+  --code-num: #b45309;
+  --code-com: #7b8394;
+  --code-type: #1d63c9;
+
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 1px 2px rgb(16 20 32 / .05), 0 8px 24px -12px rgb(16 20 32 / .18);
+
+  --sidebar: 16rem;
+  --measure: 46rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0e1016;
+    --surface: #151822;
+    --surface-2: #1c2030;
+    --line: #262b3a;
+    --line-strong: #363d51;
+
+    --ink: #e8eaf0;
+    --ink-2: #b3bac9;
+    --ink-3: #838b9d;
+
+    --accent: #9d92ff;
+    --accent-ink: #b3aaff;
+    --accent-soft: #1e1b3a;
+
+    --code-bg: #12151f;
+    --code-ink: #d8dcea;
+    --code-key: #c3a6ff;
+    --code-str: #62d6a8;
+    --code-num: #f0b072;
+    --code-com: #6d768c;
+    --code-type: #7fb2ff;
+
+    --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 10px 30px -14px rgb(0 0 0 / .7);
+  }
+}
+
+:root[data-theme="dark"] {
+  --page: #0e1016;
+  --surface: #151822;
+  --surface-2: #1c2030;
+  --line: #262b3a;
+  --line-strong: #363d51;
+
+  --ink: #e8eaf0;
+  --ink-2: #b3bac9;
+  --ink-3: #838b9d;
+
+  --accent: #9d92ff;
+  --accent-ink: #b3aaff;
+  --accent-soft: #1e1b3a;
+
+  --code-bg: #12151f;
+  --code-ink: #d8dcea;
+  --code-key: #c3a6ff;
+  --code-str: #62d6a8;
+  --code-num: #f0b072;
+  --code-com: #6d768c;
+  --code-type: #7fb2ff;
+
+  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 10px 30px -14px rgb(0 0 0 / .7);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent-ink); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---- top bar ------------------------------------------------------------------------------------- */
+
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; gap: 1rem;
+  height: 3.5rem; padding: 0 1.25rem;
+  background: color-mix(in srgb, var(--page) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand { display: flex; align-items: center; gap: .55rem; font-weight: 650; color: var(--ink); letter-spacing: -.01em; }
+.brand:hover { text-decoration: none; }
+.brand .mark {
+  width: 1.4rem; height: 1.4rem; border-radius: 5px; flex: none;
+  background: linear-gradient(135deg, var(--accent) 0%, #d16bd6 100%);
+  position: relative; overflow: hidden;
+}
+.brand .mark::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at 78% 26%, rgb(255 255 255 / .85) 0 2px, transparent 3px);
+}
+.brand .version {
+  font: 600 .68rem/1 var(--font-mono); letter-spacing: .02em;
+  color: var(--ink-3); border: 1px solid var(--line); border-radius: 999px;
+  padding: .25rem .45rem; margin-left: .1rem;
+}
+
+.topnav { display: flex; align-items: center; gap: .25rem; margin-left: auto; }
+.topnav a {
+  color: var(--ink-2); font-size: .9rem; font-weight: 500;
+  padding: .4rem .7rem; border-radius: 6px;
+}
+.topnav a:hover { background: var(--surface-2); color: var(--ink); text-decoration: none; }
+.topnav a[aria-current="page"] { color: var(--accent-ink); background: var(--accent-soft); }
+
+.navtoggle {
+  display: none; align-items: center; justify-content: center;
+  width: 2.1rem; height: 2.1rem; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--surface); color: var(--ink-2); cursor: pointer; font-size: 1rem;
+}
+
+/* ---- shell --------------------------------------------------------------------------------------- */
+
+.shell {
+  max-width: 78rem; margin: 0 auto; padding: 0 1.25rem;
+  display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); gap: 3rem;
+  align-items: start;
+}
+.shell.wide { grid-template-columns: minmax(0, 1fr); max-width: 68rem; }
+
+.sidebar {
+  position: sticky; top: 3.5rem;
+  max-height: calc(100vh - 3.5rem);
+  overflow-y: auto;
+  padding: 2rem 0 3rem;
+  font-size: .875rem;
+}
+.sidebar h2 {
+  font-size: .7rem; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--ink-3); margin: 1.6rem 0 .5rem; font-weight: 650;
+}
+.sidebar h2:first-child { margin-top: 0; }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.sidebar li { margin: 0; }
+.sidebar a {
+  display: block; padding: .28rem .6rem; border-radius: 6px;
+  color: var(--ink-2); border-left: 2px solid transparent; margin-left: -2px;
+}
+.sidebar a:hover { color: var(--ink); background: var(--surface); text-decoration: none; }
+.sidebar a.active { color: var(--accent-ink); border-left-color: var(--accent); background: var(--accent-soft); font-weight: 550; }
+
+main {
+  padding: 2.5rem 0 5rem; min-width: 0;
+  /* Side-by-side blocks below key off the reading column, not the window: with a sidebar taking 16rem the
+     two are far enough apart that a viewport query splits code samples into unreadable slivers. */
+  container-type: inline-size;
+  container-name: doc;
+}
+main > * { max-width: var(--measure); }
+main > .full, main > .scroller, main > figure.shot, main > .cards, main > .hero { max-width: none; }
+
+/* ---- typography ---------------------------------------------------------------------------------- */
+
+h1 { font-size: 2.1rem; line-height: 1.15; letter-spacing: -.025em; margin: 0 0 .75rem; font-weight: 680; }
+h2 {
+  font-size: 1.4rem; line-height: 1.25; letter-spacing: -.018em; font-weight: 650;
+  margin: 3rem 0 .9rem; padding-top: .4rem;
+}
+h3 { font-size: 1.05rem; letter-spacing: -.01em; font-weight: 640; margin: 2rem 0 .6rem; }
+h2 + h3 { margin-top: 1.2rem; }
+p { margin: 0 0 1rem; }
+.lede { font-size: 1.1rem; color: var(--ink-2); margin-bottom: 1.75rem; }
+
+.anchor {
+  color: var(--ink-3); opacity: 0; margin-left: .4rem; font-weight: 400;
+  font-size: .85em; text-decoration: none;
+}
+h2:hover .anchor, h3:hover .anchor { opacity: 1; }
+
+ul, ol { margin: 0 0 1rem; padding-left: 1.2rem; }
+li { margin-bottom: .3rem; }
+li::marker { color: var(--ink-3); }
+
+strong { font-weight: 640; color: var(--ink); }
+
+code {
+  font-family: var(--font-mono); font-size: .855em;
+  background: var(--surface-2); border-radius: 4px; padding: .12em .35em;
+  color: var(--ink);
+}
+
+hr { border: none; border-top: 1px solid var(--line); margin: 3rem 0; }
+
+/* ---- code blocks --------------------------------------------------------------------------------- */
+
+.code {
+  margin: 0 0 1.25rem;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--code-bg); overflow: hidden;
+}
+.code header {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .4rem .5rem .4rem .8rem;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  font: 600 .68rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+}
+.code header .copy {
+  margin-left: auto; border: 1px solid var(--line); background: var(--page); color: var(--ink-3);
+  border-radius: 5px; padding: .25rem .5rem; cursor: pointer;
+  font: 600 .68rem/1 var(--font-mono); letter-spacing: .05em; text-transform: uppercase;
+}
+.code header .copy:hover { color: var(--ink); border-color: var(--line-strong); }
+.code pre { margin: 0; padding: .9rem 1rem; overflow-x: auto; }
+pre { margin: 0 0 1.25rem; padding: .9rem 1rem; overflow-x: auto;
+      background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius); }
+pre code {
+  background: none; padding: 0; font-size: .82rem; line-height: 1.65; color: var(--code-ink);
+  display: block; white-space: pre;
+}
+
+.tok-key { color: var(--code-key); }
+.tok-type { color: var(--code-type); }
+.tok-str { color: var(--code-str); }
+.tok-num { color: var(--code-num); }
+.tok-com { color: var(--code-com); font-style: italic; }
+
+/* ---- tables -------------------------------------------------------------------------------------- */
+
+.scroller { overflow-x: auto; margin: 0 0 1.5rem; border: 1px solid var(--line); border-radius: var(--radius); }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+th, td { text-align: left; padding: .6rem .85rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th {
+  background: var(--surface); font: 600 .68rem/1.4 var(--font-mono);
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap;
+}
+tbody tr:last-child td { border-bottom: none; }
+td.api { font-family: var(--font-mono); font-size: .8rem; white-space: nowrap; color: var(--ink); }
+td.api .tok-type { color: var(--code-type); }
+
+/* Reference tables carry full declarations, which are far too long to keep on one line. Wrapping them and
+   giving the column a fixed share keeps the description readable instead of squeezed to nothing. */
+.sigtable { table-layout: fixed; }
+.sigtable td.api { white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
+.sigtable th:first-child, .sigtable td:first-child { width: 44%; }
+.sigtable thead th { white-space: normal; }
+
+p.caption { font-size: .88rem; color: var(--ink-2); margin-bottom: .5rem; }
+
+/* ---- landing ------------------------------------------------------------------------------------- */
+
+.hero { padding: 3.5rem 0 1rem; }
+.hero .eyebrow {
+  font: 600 .7rem/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent-ink); margin: 0 0 .9rem;
+}
+.hero h1 { font-size: clamp(2.4rem, 6vw, 3.4rem); margin-bottom: 1rem; }
+.hero .tagline { font-size: 1.18rem; color: var(--ink-2); max-width: 40rem; margin: 0 0 1.75rem; }
+
+.cta { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 2rem; }
+.btn {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .55rem 1.05rem; border-radius: var(--radius); font-size: .92rem; font-weight: 560;
+  border: 1px solid var(--line-strong); color: var(--ink); background: var(--page);
+}
+.btn:hover { background: var(--surface); text-decoration: none; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: var(--accent-ink); border-color: var(--accent-ink); }
+
+.badges { display: flex; flex-wrap: wrap; gap: .45rem; }
+.badges span {
+  font: 500 .78rem/1 var(--font-sans); color: var(--ink-2);
+  border: 1px solid var(--line); border-radius: 999px; padding: .35rem .7rem; background: var(--surface);
+}
+
+.cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); margin: 0 0 2rem; }
+.card {
+  border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface);
+  padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: .4rem;
+}
+.card h3 { margin: 0; font-size: .98rem; }
+.card p { margin: 0; font-size: .88rem; color: var(--ink-2); }
+.card a { font-size: .85rem; margin-top: auto; padding-top: .5rem; }
+
+/* ---- media --------------------------------------------------------------------------------------- */
+
+figure { margin: 0 0 1.5rem; }
+figure.shot { max-width: 42rem; }
+figure img {
+  display: block; width: 100%; border-radius: var(--radius); border: 1px solid var(--line);
+  background: var(--surface);
+}
+figcaption { font-size: .8rem; color: var(--ink-3); margin-top: .5rem; }
+
+.showcase {
+  display: grid; gap: 1.5rem 2rem; align-items: start;
+  border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface);
+  padding: 1.4rem; margin: 0 0 1.5rem; max-width: none;
+}
+.showcase > h3, .showcase > p { max-width: var(--measure); }
+.showcase h3 { margin-top: 0; }
+.showcase .code, .showcase pre { margin-bottom: 0; }
+@container doc (min-width: 52rem) {
+  .showcase { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .showcase > h3, .showcase > .lead { grid-column: 1 / -1; }
+}
+
+/* ---- callouts ------------------------------------------------------------------------------------ */
+
+.note {
+  border: 1px solid var(--line); border-left: 3px solid var(--accent);
+  background: var(--surface); border-radius: var(--radius);
+  padding: .85rem 1rem; margin: 0 0 1.25rem; font-size: .92rem;
+}
+.note strong { display: block; margin-bottom: .2rem; color: var(--accent-ink); font-size: .78rem;
+               text-transform: uppercase; letter-spacing: .07em; }
+.note p:last-child { margin-bottom: 0; }
+
+/* ---- footer -------------------------------------------------------------------------------------- */
+
+footer.site {
+  border-top: 1px solid var(--line); margin-top: 4rem;
+  padding: 2rem 1.25rem 3rem;
+  color: var(--ink-3); font-size: .88rem;
+}
+footer.site .inner { max-width: 78rem; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 1rem; }
+footer.site .inner > :last-child { margin-left: auto; }
+
+/* ---- narrow -------------------------------------------------------------------------------------- */
+
+@media (max-width: 60rem) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .navtoggle { display: inline-flex; }
+  .sidebar {
+    position: static; max-height: none; overflow: visible;
+    padding: 1rem 0; border-bottom: 1px solid var(--line);
+  }
+  .sidebar[hidden] { display: none; }
+  main { padding-top: 1.75rem; }
+  .hero { padding-top: 2.25rem; }
+}
+
+/* On a phone the four nav links plus the wordmark do not fit at full size. The version badge is the first
+   thing to go, then the gaps, so every link stays reachable rather than sliding off the edge. */
+@media (max-width: 34rem) {
+  .topbar { gap: .5rem; padding: 0 .75rem; }
+  .brand .version { display: none; }
+  .topnav { gap: 0; }
+  .topnav a { padding: .4rem .45rem; font-size: .82rem; }
+}
