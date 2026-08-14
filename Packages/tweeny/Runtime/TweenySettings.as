@@ -5,8 +5,6 @@ namespace Tweeny
     /// <summary>
     /// The Tweeny page in Project Settings, and the thing that bootstraps the engine.
     ///
-    /// A ProjectSetting is discovered and instantiated by the engine on its own, so importing the package is
-    /// all a project has to do: there is no manager prefab to place and no script to register by hand.
     /// OnStart creates the runner entity and makes it immutable so it survives scene loads.
     /// </summary>
     class TweenySettings : ProjectSetting
