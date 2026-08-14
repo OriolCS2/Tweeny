@@ -1,0 +1,10 @@
+{
+    "Fields": {
+        "bool runBootstrapProbe": {
+            "Value": false
+        },
+        "string& reportPath": {
+            "Value": "C:/Users/oriol/AppData/Local/Temp/claude/E--GitHub-Tweeny/50466a2b-f263-4f3e-9dfe-f0ef3fa50d79/scratchpad/bootstrap.txt"
+        }
+    }
+}

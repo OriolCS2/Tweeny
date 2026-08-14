@@ -1,0 +1,49 @@
+{
+    "Fields": {
+        "Ease defaultEase": {
+            "Value": 6
+        },
+        "float defaultEaseOvershoot": {
+            "Value": 1.702
+        },
+        "float defaultEasePeriod": {
+            "Value": 0
+        },
+        "AutoPlay defaultAutoPlay": {
+            "Value": 3
+        },
+        "bool defaultAutoKill": {
+            "Value": true
+        },
+        "LoopType defaultLoopType": {
+            "Value": 0
+        },
+        "UpdateType defaultUpdateType": {
+            "Value": 0
+        },
+        "bool defaultTimeScaleIndependent": {
+            "Value": false
+        },
+        "float timeScale": {
+            "Value": 1
+        },
+        "float unscaledTimeScale": {
+            "Value": 1
+        },
+        "bool validateTargets": {
+            "Value": true
+        },
+        "NestedTweenFailureBehaviour nestedTweenFailure": {
+            "Value": 0
+        },
+        "LogBehaviour logBehaviour": {
+            "Value": 0
+        },
+        "bool autoCreateRunner": {
+            "Value": true
+        },
+        "string& runnerEntityName": {
+            "Value": "[Tweeny]"
+        }
+    }
+}
