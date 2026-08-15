@@ -330,7 +330,7 @@ using namespace Tweeny;
     GUI::TableSetupColumn("Controls",
     GUI::TableColumnFlags::WidthFixed | GUI::TableColumnFlags::NoResize
     | GUI::TableColumnFlags::NoReorder,
-    GUI::GetFrameHeight() * 3.0f + 24.0f);
+    TweenyEditorStyle::ControlsColumnWidth(3, GUI::GetFrameHeight()));
     GUI::TableHeadersRow();
 
     for (uint i = 0; i < animations.length(); i++)
@@ -409,6 +409,8 @@ using namespace Tweeny;
     bool held = running && session.IsPaused();
     float size = GUI::GetFrameHeight();
     bool acted = false;
+
+    TweenyEditorStyle::CenterButtonRow(3, size);
 
     TweenyEditorStyle::BeginButtonRow();
 
@@ -494,7 +496,7 @@ using namespace Tweeny;
     GUI::TableSetupColumn("Controls",
     GUI::TableColumnFlags::WidthFixed | GUI::TableColumnFlags::NoResize
     | GUI::TableColumnFlags::NoReorder,
-    GUI::GetFrameHeight() * 4.0f + 24.0f);
+    TweenyEditorStyle::ControlsColumnWidth(4, GUI::GetFrameHeight()));
     GUI::TableHeadersRow();
 
     for (uint i = 0; i < tweens.length(); i++)
@@ -668,6 +670,7 @@ using namespace Tweeny;
     bool held = tween.IsActive() && !tween.IsPlaying() && !tween.IsComplete();
     bool acted = false;
 
+    TweenyEditorStyle::CenterButtonRow(4, size);
     TweenyEditorStyle::BeginButtonRow();
 
     if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Play, size, false, "Play"))

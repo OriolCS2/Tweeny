@@ -2,13 +2,13 @@
     "schemaVersion": 1,
     "slug": "tweeny",
     "displayName": "Tweeny",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "packageType": "package",
     "summary": "A complete tweening and animation engine for CometEngine.",
     "description": "# Tweeny\n\nTweeny animates anything over time: positions, rotations, scales, colours, alpha, UI, audio, materials and any value you can read and write.\n\nWritten for CometEngine and AngelScript, with easings, sequences, paths, punch and shake, callbacks, coroutine integration and an inspector-driven animation component.",
     "author": {
         "name": "Oriol Capdevila",
-        "email": "",
+        "email": "contrasnya@gmail.com",
         "url": ""
     },
     "license": "MIT",
@@ -20,11 +20,11 @@
         "sequence",
         "motion"
     ],
-    "homepageUrl": "",
+    "homepageUrl": "https:\/\/oriolcs2.github.io\/Tweeny\/",
     "repoUrl": "https:\/\/github.com\/OriolCS2\/Tweeny",
     "documentationUrl": "",
     "changelogUrl": "",
-    "minEngineVersion": "2.9.2",
+    "minEngineVersion": "2.9.3",
     "dependencies": {},
     "samples": [],
     "hiddenFolders": [

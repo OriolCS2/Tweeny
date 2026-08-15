@@ -82,12 +82,7 @@ class TweenyAnimationInspector : EditorBehaviour
 		bool acted = false;
 
 		GUI::Spacing();
-		float offset = (GUI::GetContentRegionAvail().x - TweenyEditorStyle::RowWidth(3, size)) * 0.5f;
-		if (offset > 0.0f)
-		{
-			GUI::SetCursorPosX(GUI::GetCursorPosX() + offset);
-		}
-
+		TweenyEditorStyle::CenterButtonRow(3, size);
 		TweenyEditorStyle::BeginButtonRow();
 
 		if (TweenyEditorStyle::RowButton(

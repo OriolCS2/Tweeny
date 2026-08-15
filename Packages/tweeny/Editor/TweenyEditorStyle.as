@@ -80,6 +80,39 @@ namespace TweenyEditorStyle
   }
 
   /// <summary>
+  /// Moves the cursor so a joined row of buttons sits in the middle of the space left on this line.
+  ///
+  /// Worth doing even where the space was measured to fit the row exactly: the last column of a table takes
+  /// whatever width is left over once the others have been laid out, so the room the buttons get is never
+  /// quite the room they asked for.
+  /// </summary>
+  /// <param name="count">How many buttons the row has.</param>
+  /// <param name="size">Side of each button.</param>
+  void CenterButtonRow(int count, float size)
+  {
+    float offset = (GUI::GetContentRegionAvail().x - RowWidth(count, size)) * 0.5f;
+    if (offset > 0.0f)
+    {
+      GUI::SetCursorPosX(GUI::GetCursorPosX() + offset);
+    }
+  }
+
+  /// <summary>
+  /// Width to give a table column that carries nothing but a joined row of buttons.
+  ///
+  /// It is the row itself plus the padding the table puts on either side of a cell, so the column ends
+  /// exactly where the last button does. Anything wider leaves the controls floating in empty space; the
+  /// padding cannot be left out, because the table would then clip the last button.
+  /// </summary>
+  /// <param name="count">How many buttons the row has.</param>
+  /// <param name="size">Side of each button.</param>
+  /// <returns>Returns the width in unscaled units.</returns>
+  float ControlsColumnWidth(int count, float size)
+  {
+    return RowWidth(count, size) + GUI::GetStyleVarVector(GUI::StyleVar::CellPadding).x * 2.0f;
+  }
+
+  /// <summary>
   /// Draws a progress bar filling the width available to it.
   /// </summary>
   /// <param name="fraction">How full it is, from 0 to 1.</param>
