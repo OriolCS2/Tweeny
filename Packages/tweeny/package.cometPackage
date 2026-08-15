@@ -27,8 +27,6 @@
     "minEngineVersion": "2.9.3",
     "dependencies": {},
     "samples": [],
-    "hiddenFolders": [
-        "Documentation"
-    ],
+    "hiddenFolders": [],
     "hideInEditor": false
 }
