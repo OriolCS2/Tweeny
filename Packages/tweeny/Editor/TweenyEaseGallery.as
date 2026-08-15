@@ -56,6 +56,8 @@ using namespace Tweeny;
         }
 
         if (animate) {
+            CometEditor::EditorApplication::RequestRedraw();
+
             playhead += Time::GetUnscaledDeltaTime() * speed * 0.5f;
             while (playhead > 1.0f) {
                 playhead -= 1.0f;
@@ -73,14 +75,7 @@ using namespace Tweeny;
     {
         GUI::BeginChild("curves", LIST_WIDTH, 0.0f, GUI::ChildFlags::Borders);
 
-        GUI::SetNextItemFullWidth();
-        filter = GUI::InputText("##filter", filter);
-        if (filter.isEmpty()) {
-            // InputText has no placeholder, so the hint is drawn over the empty field.
-            Vector2 box = GUI::GetItemRectMin();
-            GUI::DrawText(Vector2(box.x + 6.0f, box.y + 3.0f), GUI::GetStyleColor(GUI::Col::TextDisabled), "Search");
-        }
-
+        DrawSearchField();
         GUI::Spacing();
 
         string lastFamily = "";
@@ -100,6 +95,60 @@ using namespace Tweeny;
         }
 
         GUI::EndChild();
+    }
+
+    /// <summary>
+    /// The editor's own search field: magnifier to the left, and a clear button overlaid on the right end
+    /// of the box once there is something to clear.
+    ///
+    /// The engine draws this shape from one shared helper, which is not reachable from script, so it is
+    /// reproduced here call for call: the magnifier is a separate text item rather than a placeholder, the
+    /// clear button sits inside the frame so the row never changes width, and the field is marked as
+    /// allowing overlap -- without that the input swallows the mouse and the button can never be clicked.
+    /// </summary>
+    private void DrawSearchField()
+    {
+        float clearWidth = 22.0f;
+        float spacing = GUI::GetStyleVarVector(GUI::StyleVar::ItemSpacing).x;
+
+        GUI::AlignTextToFramePadding();
+        GUI::TextDisabled(CometEditor::RawIcon::Search);
+        GUI::SameLine();
+
+        float boxWidth = GUI::GetContentRegionAvail().x;
+        if (boxWidth < 40.0f) {
+            boxWidth = 40.0f;
+        }
+
+        bool edited = false;
+        GUI::SetNextItemWidth(boxWidth);
+        GUI::SetNextItemAllowOverlap();
+        filter = GUI::InputText("##filter", filter, edited, GUI::InputTextFlags::AutoSelectAll);
+
+        Vector2 frameMin = GUI::GetItemRectMin();
+        Vector2 frameMax = GUI::GetItemRectMax();
+
+        if (filter.isEmpty()) {
+            Vector2 padding = GUI::GetStyleVarVector(GUI::StyleVar::FramePadding);
+            GUI::DrawText(Vector2(frameMin.x + padding.x, frameMin.y + padding.y),
+                GUI::GetStyleColor(GUI::Col::TextDisabled), "Search");
+            return;
+        }
+
+        GUI::PushIDString("clearFilter");
+        GUI::SetCursorScreenPos(Vector2(frameMax.x - clearWidth, frameMin.y));
+
+        Color transparent = Color(0.0f, 0.0f, 0.0f, 0.0f);
+        GUI::PushStyleColor(int(GUI::Col::Button), transparent);
+        GUI::PushStyleColor(int(GUI::Col::ButtonHovered), transparent);
+        GUI::PushStyleColor(int(GUI::Col::ButtonActive), transparent);
+        if (GUI::Button(CometEditor::RawIcon::TimesCircle, Vector2(clearWidth, frameMax.y - frameMin.y))) {
+            filter = "";
+        }
+        GUI::PopStyleColor(3);
+        GUI::PopID();
+
+        GUI::SetCursorScreenPos(Vector2(frameMin.x, frameMax.y + spacing));
     }
 
     private bool Matches(const string&in name)
@@ -140,9 +189,9 @@ using namespace Tweeny;
 
         GUI::SeparatorText(names[uint(selected)]);
 
-        float plotHeight = GUI::GetContentRegionAvail().y - GUI::GetFrameHeightWithSpacing() * 6.5f;
-        if (plotHeight < 120.0f) {
-            plotHeight = 120.0f;
+        float plotHeight = GUI::GetContentRegionAvail().y - ControlsHeight(current);
+        if (plotHeight < 90.0f) {
+            plotHeight = 90.0f;
         }
         DrawPlot(current, plotHeight);
 
@@ -155,9 +204,38 @@ using namespace Tweeny;
         GUI::EndChild();
     }
 
+    /// <summary>
+    /// Exact height of everything drawn below the plot, so the plot can be given the rest.
+    /// </summary>
+    /// <param name="current">The selected curve, which decides how many parameter rows there are.</param>
+    /// <returns>Returns the height in pixels.</returns>
+    private float ControlsHeight(Ease current)
+    {
+        int rows = 2;                                  // animate, preview speed
+        if (UsesOvershoot(current)) { rows++; }
+        if (UsesPeriod(current)) { rows++; }
+        if (UsesFlashes(current)) { rows++; }
+
+        float spacing = GUI::GetStyleVarVector(GUI::StyleVar::ItemSpacing).y;
+        return GUI::GetFrameHeight()                       // the motion strip
+            + GUI::GetFrameHeightWithSpacing() * float(rows)
+            + GUI::GetFrameHeightWithSpacing()             // the copy row
+            + spacing * 4.0f;                              // the spacings around them
+    }
+
+    /// <summary>
+    /// Width available for the plot and the motion strip, kept off the right-hand edge.
+    /// </summary>
+    /// <returns>Returns the width in pixels.</returns>
+    private float ContentWidth()
+    {
+        float width = GUI::GetContentRegionAvail().x - GUI::GetStyleVarVector(GUI::StyleVar::ItemSpacing).x;
+        return width < 60.0f ? 60.0f : width;
+    }
+
     private void DrawPlot(Ease current, float height)
     {
-        float width = GUI::GetContentRegionAvail().x;
+        float width = ContentWidth();
         Vector2 origin = GUI::GetCursorScreenPos();
         Vector2 topLeft = origin;
         Vector2 bottomRight = Vector2(origin.x + width, origin.y + height);
@@ -208,7 +286,7 @@ using namespace Tweeny;
     /// <param name="current">The curve being previewed.</param>
     private void DrawMotionStrip(Ease current)
     {
-        float width = GUI::GetContentRegionAvail().x;
+        float width = ContentWidth();
         float height = GUI::GetFrameHeight();
         Vector2 origin = GUI::GetCursorScreenPos();
         Vector2 bottomRight = Vector2(origin.x + width, origin.y + height);
@@ -241,36 +319,28 @@ using namespace Tweeny;
         speed = GUI::SliderFloat("##speed", speed, 0.1f, 3.0f, edited);
         GUI::EndDisabled();
 
-        // Only Back, Elastic and Flash read any parameters. Showing the rest greyed out, rather than
-        // hiding them, is what tells you the curve you picked ignores them instead of leaving you
-        // wondering why dragging a slider did nothing.
-        bool usesOvershoot = UsesOvershoot(current);
-        GUI::BeginDisabled(!usesOvershoot);
-        GUI::StandardFieldName(UsesPeriod(current) ? "Amplitude" : "Overshoot",
-            "How far past the destination the curve reaches. Only Back and Elastic use it.");
-        GUI::SetCursorAtStandardPropertyWidgetPosition();
-        GUI::SetNextItemWidthToStandardPropertyWidget();
-        overshoot = GUI::SliderFloat("##overshoot", overshoot, 0.0f, 6.0f, edited);
-        GUI::EndDisabled();
+        // Only Back, Elastic and Flash read any parameters, so only those curves get the rows. A curve that
+        // takes none simply has nothing there.
+        if (UsesOvershoot(current)) {
+            GUI::StandardFieldName(UsesPeriod(current) ? "Amplitude" : "Overshoot",
+                "How far past the destination the curve reaches.");
+            GUI::SetCursorAtStandardPropertyWidgetPosition();
+            GUI::SetNextItemWidthToStandardPropertyWidget();
+            overshoot = GUI::SliderFloat("##overshoot", overshoot, 0.0f, 6.0f, edited);
+        }
 
-        bool usesPeriod = UsesPeriod(current);
-        GUI::BeginDisabled(!usesPeriod);
-        GUI::StandardFieldName("Period", "How tight the springing is. Only Elastic uses it.");
-        GUI::SetCursorAtStandardPropertyWidgetPosition();
-        GUI::SetNextItemWidthToStandardPropertyWidget();
-        period = GUI::SliderFloat("##period", period, -1.0f, 2.0f, edited);
-        GUI::EndDisabled();
+        if (UsesPeriod(current)) {
+            GUI::StandardFieldName("Period", "How tight the springing is.");
+            GUI::SetCursorAtStandardPropertyWidgetPosition();
+            GUI::SetNextItemWidthToStandardPropertyWidget();
+            period = GUI::SliderFloat("##period", period, -1.0f, 2.0f, edited);
+        }
 
-        bool usesFlashes = UsesFlashes(current);
-        GUI::BeginDisabled(!usesFlashes);
-        GUI::StandardFieldName("Flashes", "How many times the value blinks. Only the Flash family uses it.");
-        GUI::SetCursorAtStandardPropertyWidgetPosition();
-        GUI::SetNextItemWidthToStandardPropertyWidget();
-        flashes = GUI::SliderFloat("##flashes", flashes, 1.0f, 12.0f, edited);
-        GUI::EndDisabled();
-
-        if (!usesOvershoot && !usesPeriod && !usesFlashes) {
-            GUI::TextDisabled(names[uint(selected)] + " takes no parameters.");
+        if (UsesFlashes(current)) {
+            GUI::StandardFieldName("Flashes", "How many times the value blinks.");
+            GUI::SetCursorAtStandardPropertyWidgetPosition();
+            GUI::SetNextItemWidthToStandardPropertyWidget();
+            flashes = GUI::SliderFloat("##flashes", flashes, 1.0f, 12.0f, edited);
         }
 
         GUI::Spacing();
