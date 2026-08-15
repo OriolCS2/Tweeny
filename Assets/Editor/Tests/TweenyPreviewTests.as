@@ -64,6 +64,52 @@ namespace TweenyTests
             ResetManager();
         }
 
+        // A From tween used to be put back by completing it, and completing an endless tween is a no-op --
+        // so an animation set to play From and loop forever was moved to its start value at init and then
+        // left there. Nothing said so; the scene was simply wrong afterwards.
+        t.Case("a From tween that loops forever still restores");
+        {
+            FloatProbe probe(12.0f);
+            TweenFloat@ tween = Tweeny::To(probe.Getter(), probe.Setter(), 90.0f, 1.0f);
+            tween.SetEase(Ease::Linear).SetLoops(-1, LoopType::Restart).From(false);
+
+            TweenyPreview preview;
+            preview.Add(tween);
+            t.Check(Math::Abs(probe.value - 12.0f) > 0.001f, "starting a From tween moved the target");
+            preview.Update(0.4f);
+
+            preview.Stop(true);
+            t.CheckApprox(probe.value, 12.0f, "and it went back despite looping forever");
+            ResetManager();
+        }
+
+        t.Case("a From tween that yoyos restores the original, not the flipped value");
+        {
+            FloatProbe probe(5.0f);
+            TweenFloat@ tween = Tweeny::To(probe.Getter(), probe.Setter(), 60.0f, 1.0f);
+            tween.SetEase(Ease::Linear).SetLoops(2, LoopType::Yoyo).From(false);
+
+            TweenyPreview preview;
+            preview.Add(tween);
+            preview.Update(1.5f);
+            preview.Stop(true);
+            t.CheckApprox(probe.value, 5.0f, "an even loop count does not hand back the from value");
+            ResetManager();
+        }
+
+        t.Case("stopping on the very first frame still restores");
+        {
+            FloatProbe probe(2.5f);
+            TweenFloat@ tween = Tweeny::To(probe.Getter(), probe.Setter(), 40.0f, 1.0f);
+            tween.SetEase(Ease::Linear);
+
+            TweenyPreview preview;
+            preview.Add(tween);
+            preview.Stop(true);
+            t.CheckApprox(probe.value, 2.5f, "nothing moved and nothing was left behind");
+            ResetManager();
+        }
+
         t.Case("a preview never fires callbacks");
         {
             FloatProbe probe(0.0f);

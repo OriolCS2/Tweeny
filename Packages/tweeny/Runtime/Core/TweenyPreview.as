@@ -3,6 +3,26 @@ using namespace CometEngine;
 namespace Tweeny
 {
 /// <summary>
+/// Puts one previewed tween's target back where it was and discards the tween.
+///
+/// This is the whole restore rule in one place, because more than one thing ends a preview and they have to
+/// agree. The tween itself knows where the original value went -- forwards or backwards, looping or not --
+/// so it is asked to hand it back rather than being steered there from outside.
+/// </summary>
+/// <param name="tween">The tween to release.</param>
+/// <param name="restoreTarget">Whether the target is put back before the tween is discarded.</param>
+void RestorePreviewed(ITween@ tween, bool restoreTarget = true)
+{
+    if (tween is null || !tween.IsActive()) {
+        return;
+    }
+    if (restoreTarget) {
+        tween.RestorePreTweenState();
+    }
+    tween.Kill(false);
+}
+
+/// <summary>
 /// Plays tweens inside the editor without entering play mode, and puts everything back afterwards.
 ///
 /// The restore is the important part. A preview that leaves the scene displaced is worse than no preview,
@@ -68,19 +88,7 @@ class TweenyPreview
     void Stop(bool restoreTargets = true)
     {
         for (uint i = 0; i < previewed.length(); i++) {
-            ITween@ tween = previewed[i];
-            if (tween is null || !tween.IsActive()) {
-                continue;
-            }
-            if (restoreTargets) {
-                if (tween.IsFromTween()) {
-                    tween.Complete(false);
-                }
-                else {
-                    tween.Rewind(true);
-                }
-            }
-            tween.Kill(false);
+            Tweeny::RestorePreviewed(previewed[i], restoreTargets);
         }
         previewed.resize(0);
         previewing = false;

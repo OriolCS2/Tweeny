@@ -50,5 +50,6 @@ class TweenyTestRunner : EditorBehaviour
         TweenyTests::RunShortcutTests(context);
         TweenyTests::RunIntegrationTests(context);
         TweenyTests::RunPreviewTests(context);
+        TweenyTests::RunPreviewSessionTests(context);
     }
 }

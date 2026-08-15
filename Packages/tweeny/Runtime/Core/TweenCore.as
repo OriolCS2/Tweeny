@@ -760,6 +760,35 @@ namespace Tweeny
         }
 
         /// <summary>
+        /// Puts the target back to the value it held before this tween first touched it.
+        ///
+        /// This is the preview's undo, and it belongs here because only the tween knows where that value
+        /// went. An ordinary tween keeps it as its start value, so the target goes back to position zero.
+        ///
+        /// A From tween is the other way round: it was built to play towards the value the target already
+        /// had, so the original is its end value, at the close of the first forward pass. That is asked for
+        /// as loop one rather than loop zero because sitting exactly on the duration flips how a Yoyo reads
+        /// the loop counter -- at loop zero it would take the pose as the start of the way back and hand
+        /// over the from value instead of the original.
+        ///
+        /// It writes unconditionally, because neither of the obvious alternatives can be trusted to. Rewind
+        /// skips the write when the tween looks untouched, and Complete refuses outright on an endless one,
+        /// so a From animation set to loop forever was never being put back at all.
+        /// </summary>
+        void RestorePreTweenState()
+        {
+            if (!active || !startupDone) {
+                return;
+            }
+            if (isFrom) {
+                DoGotoInternal(duration, 1, UpdateMode::Goto);
+            }
+            else {
+                DoGotoInternal(0.0f, 0, UpdateMode::Goto);
+            }
+        }
+
+        /// <summary>
         /// Hands the tween over to a sequence. The sequence becomes the only thing that advances it, so the
         /// tween gives up its delay (the sequence expresses that as an offset instead), its auto-kill and
         /// any further configuration.

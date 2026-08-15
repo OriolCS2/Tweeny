@@ -7,133 +7,130 @@ using namespace Tweeny;
 /// from the inspector without pressing Play and without opening another window.
 ///
 /// The buttons come first and the component's own fields follow, drawn by the editor exactly as it would
-/// have drawn them. Previewing here runs the very tween the component would build at play start, and
-/// stopping puts every target back; so does moving the selection elsewhere, because an animation left
-/// halfway through would otherwise be silently saved into the scene as the object's real position.
+/// have drawn them. Previewing here runs the very tween the component would build at play start, and it goes
+/// through the shared preview session, so the Tweeny window shows the same state and its buttons agree with
+/// these ones.
+///
+/// Moving the selection elsewhere stops the preview and puts the targets back, because an animation left
+/// halfway through looks exactly like the object's real position and would be saved into the scene as one.
 /// </summary>
 [CustomInspector("Tweeny::TweenyAnimation")]
 class TweenyAnimationInspector : EditorBehaviour
 {
-    private TweenyPreview preview;
-    private TweenyAnimation@ previewed;
-    private float lastFrameTime = 0.0f;
-
     void OnCustomInspector(Tweeny::TweenyAnimation@ target)
     {
         DrawTransport(target);
-        GUI::Spacing();
-
-        // Everything the component declares, drawn by the editor itself: no field list to keep in step
-        // with the component, and new fields appear here the moment they are added to it.
         GUI::ShowAllProperties();
     }
 
     /// <summary>
     /// Drives the preview and ends it when the user looks away.
     ///
-    /// This runs every editor tick, not just while the inspector is being drawn, which is what makes both
-    /// halves work: the animation keeps moving, and deselecting the entity puts it back. A preview left
-    /// half-finished would look like the object's real position and would be saved into the scene as one.
+    /// This runs every editor tick rather than only while the inspector is on screen, which is what makes
+    /// both halves work: the animation keeps moving, and deselecting the entity puts it back.
     /// </summary>
     void Update()
     {
-        if (!preview.IsPreviewing()) {
-            return;
-        }
+        TweenyPreviewSession@ session = Tweeny::PreviewSession();
+        DropDeselected(session);
 
-        if (!StillSelected()) {
-            StopPreview();
-            return;
+        // The preview moves entities in the world, so the viewports have to be marked stale as well as the
+        // interface. Without it the values change and the scene keeps showing its last image.
+        if (session.Advance()) {
+            CometEditor::EditorApplication::RequestSceneRedraw();
         }
-
-        Advance();
     }
 
-    private bool StillSelected()
+    /// <summary>
+    /// Ends the previews started here for entities that are no longer selected.
+    ///
+    /// A preview left running once its inspector is off screen is how a scene quietly ends up saved with an
+    /// object halfway through an animation. Previews started from the Tweeny window are left alone, because
+    /// the window is still there showing them.
+    /// </summary>
+    /// <param name="session">The shared session.</param>
+    private void DropDeselected(TweenyPreviewSession@ session)
     {
-        if (previewed is null || !Object::IsValid(previewed)) {
-            return false;
-        }
-        Entity@ owner = previewed.entity;
-        return owner !is null && Object::IsValid(owner) && CometEditor::Selection::Contains(owner);
-    }
-
-    private void DrawTransport(TweenyAnimation@ target)
-    {
-        bool previewingThis = preview.IsPreviewing() && previewed is target;
-        Vector2 square = Vector2(GUI::GetFrameHeight(), GUI::GetFrameHeight());
-
-        GUI::SetCursorAtStandardFieldPosition();
-
-        if (GUI::Button(CometEditor::RawIcon::Play, square)) {
-            StartPreview(target);
-        }
-        GUI::Tooltip("Preview this animation in the editor");
-
-        GUI::SameLine();
-        GUI::BeginDisabled(!previewingThis);
-        if (GUI::Button(CometEditor::RawIcon::Pause, square)) {
-            ITween@ tween = target.GetTween();
-            if (tween !is null) {
-                tween.Pause();
+        array<TweenyAnimation@>@ mine = session.GetSources(true);
+        for (uint i = 0; i < mine.length(); i++) {
+            TweenyAnimation@ animation = mine[i];
+            Entity@ owner = animation.entity;
+            if (owner is null || !Object::IsValid(owner) || !CometEditor::Selection::Contains(owner)) {
+                session.StopFor(animation);
+                CometEditor::EditorApplication::RequestSceneRedraw();
             }
         }
-        GUI::Tooltip("Pause");
+    }
+
+    /// <summary>
+    /// The three transport buttons, centred and joined into one control.
+    ///
+    /// They are drawn as a single block rather than as a property row because they act on the component as a
+    /// whole rather than on any one of its fields, and the fields underneath are what the editor's standard
+    /// layout is for.
+    /// </summary>
+    /// <param name="target">The component being inspected.</param>
+    private void DrawTransport(TweenyAnimation@ target)
+    {
+        TweenyPreviewSession@ session = Tweeny::PreviewSession();
+        bool running = session.IsPreviewing(target);
+        bool paused = running && session.IsPaused();
+
+        float size = GUI::GetFrameHeight();
+        Vector2 square = Vector2(size, size);
+
+        // Joined, so the three read as one control rather than three loose buttons. The spacing has to go
+        // before the width is measured, or the group would be centred as if the gaps were still there.
+        GUI::PushStyleVarVector(int(GUI::StyleVar::ItemSpacing), Vector2(0.0f, 0.0f));
+
+        float available = GUI::GetContentRegionAvail().x;
+        float offset = (available - size * 3.0f) * 0.5f;
+        if (offset > 0.0f) {
+            GUI::SetCursorPosX(GUI::GetCursorPosX() + offset);
+        }
+
+        // Once it is running, the button restarts it, so it shows the replay arrow: pressing play on
+        // something that is already playing has nothing left to mean.
+        if (GUI::Button(running ? CometEditor::RawIcon::Redo : CometEditor::RawIcon::Play, square)) {
+            session.Play(target, true);
+            CometEditor::EditorApplication::RequestSceneRedraw();
+        }
+        GUI::Tooltip(running ? "Play this animation again from the start"
+                             : "Preview this animation in the editor");
+
+        GUI::SameLine();
+        GUI::BeginDisabled(!running);
+
+        // Held down while paused, because a pause that leaves the button looking untouched gives no way to
+        // tell a paused preview from a finished one.
+        if (paused) {
+            GUI::PushStyleColor(int(GUI::Col::Button), GUI::GetStyleColor(GUI::Col::ButtonActive));
+        }
+        if (GUI::Button(CometEditor::RawIcon::Pause, square)) {
+            session.TogglePause();
+        }
+        if (paused) {
+            GUI::PopStyleColor();
+        }
+        GUI::Tooltip(paused ? "Resume" : "Pause");
 
         GUI::SameLine();
         if (GUI::Button(CometEditor::RawIcon::Stop, square)) {
-            StopPreview();
+            session.StopFor(target);
+            // Stopping writes the original values back, and the viewports would otherwise keep showing the
+            // animated ones until something else happened to make them redraw.
+            CometEditor::EditorApplication::RequestSceneRedraw();
         }
         GUI::Tooltip("Stop and put everything back");
+
         GUI::EndDisabled();
-
-        if (previewingThis) {
-            GUI::SameLine();
-            GUI::AlignTextToFramePadding();
-            GUI::TextDisabled("previewing, " + formatFloat(preview.GetElapsed(), "", 0, 2) + "s");
-        }
-    }
-
-    private void StartPreview(TweenyAnimation@ target)
-    {
-        StopPreview();
-        if (target is null) {
-            return;
-        }
-        target.Play();
-        preview.Add(target.GetTween());
-        @previewed = target;
-        lastFrameTime = 0.0f;
-    }
-
-    private void StopPreview()
-    {
-        if (preview.IsPreviewing()) {
-            preview.Stop(true);
-        }
-        @previewed = null;
-        lastFrameTime = 0.0f;
-    }
-
-    private void Advance()
-    {
-        // This animates entities in the world, so the viewports have to be invalidated as well as the
-        // interface: without it the values change but the scene keeps its last drawn image.
-        CometEditor::EditorApplication::RequestSceneRedraw();
-
-        float now = Time::GetUnscaledGameTime();
-        float delta = lastFrameTime <= 0.0f ? 0.0f : (now - lastFrameTime);
-        lastFrameTime = now;
-        if (delta > 0.25f) {
-            // The editor draws on demand, so a long gap between frames would make the preview leap. This
-            // keeps it looking like motion rather than teleporting.
-            delta = 0.25f;
-        }
-        preview.Update(delta);
+        GUI::PopStyleVar();
     }
 
     void OnDestroy()
     {
-        StopPreview();
+        // Losing this object -- a script recompile, or the editor closing -- would drop the only thing still
+        // pointing at a preview started here, so it is put back now rather than left in the scene.
+        Tweeny::PreviewSession().StopOwned(true);
     }
 }

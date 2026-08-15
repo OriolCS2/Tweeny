@@ -134,6 +134,12 @@ namespace Tweeny
         void PrepareForPreview();
 
         /// <summary>
+        /// Puts the target back to the value it held before this tween first touched it, whatever the
+        /// tween's direction, loop settings or current position.
+        /// </summary>
+        void RestorePreTweenState();
+
+        /// <summary>
         /// Copies the project-wide defaults onto a freshly created tween. Called once, at creation.
         /// </summary>
         /// <param name="ease">The default easing curve.</param>
