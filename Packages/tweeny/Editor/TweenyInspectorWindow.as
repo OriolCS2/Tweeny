@@ -20,6 +20,14 @@ namespace Tweeny
     private array<TweenyAnimation@> animations;
     private array<Entity@> animationOwners;
 
+    /// The live tweens, gathered once at the top of the frame.
+    ///
+    /// Everything that follows reads these rather than asking the manager again. Each of those questions
+    /// walks every tween there is, and the toolbar alone used to ask eight of them before a single row was
+    /// drawn -- eight full passes over hundreds of tweens, every frame, to print two numbers.
+    private array<ITween@>@ liveTweens;
+    private int playingCount = 0;
+
     /// Distance the editor leaves between a property widget and the right edge of the window. Matching it
     /// is what lines the toolbar up with the fields underneath.
     private float WIDGET_RIGHT_MARGIN = 15.0f;
@@ -37,8 +45,14 @@ namespace Tweeny
     {
       bool playing = CometEditor::EditorApplication::IsPlaying();
       Tweeny::PreviewSession().SetPlayMode(playing);
-      if (!playing)
+      if (playing)
       {
+        GatherLiveTweens();
+      }
+      else
+      {
+        @liveTweens = null;
+        playingCount = 0;
         CollectAnimations();
       }
 
@@ -60,6 +74,22 @@ namespace Tweeny
       }
     }
 
+    /// <summary>
+    /// Takes one copy of the live tween list and counts how many are advancing, in a single pass.
+    /// </summary>
+    private void GatherLiveTweens()
+    {
+      @liveTweens = Tweeny::AllTweens();
+      playingCount = 0;
+      for (uint i = 0; i < liveTweens.length(); i++)
+      {
+        if (liveTweens[i] !is null && liveTweens[i].IsPlaying())
+        {
+          playingCount++;
+        }
+      }
+    }
+
     // ---- header --------------------------------------------------------------------------------------
 
     /// <summary>
@@ -77,13 +107,14 @@ namespace Tweeny
     {
       GUI::Spacing();
       GUI::SetCursorAtStandardFieldPosition();
+      int liveCount = liveTweens is null ? 0 : int(liveTweens.length());
+
       GUI::AlignTextToFramePadding();
       if (playing)
       {
-        int total = Tweeny::TotalActiveTweens();
-        GUI::Text(total + (total == 1 ? " tween" : " tweens"));
+        GUI::Text(liveCount + (liveCount == 1 ? " tween" : " tweens"));
         GUI::SameLine();
-        GUI::TextDisabled("(" + Tweeny::TotalPlayingTweens() + " playing)");
+        GUI::TextDisabled("(" + playingCount + " playing)");
       }
 
       float size = TweenyEditorStyle::BUTTON_SIZE;
@@ -100,11 +131,9 @@ namespace Tweeny
 
       TweenyPreviewSession@ session = Tweeny::PreviewSession();
 
-      bool running = playing ?(Tweeny::TotalPlayingTweens() > 0) : session.IsPreviewing();
-      bool held = playing
-      ?(Tweeny::TotalActiveTweens() > 0 && Tweeny::TotalPlayingTweens() == 0)
-      : session.IsPaused();
-      bool canStart = playing ?(Tweeny::TotalActiveTweens() > 0) :(animations.length() > 0);
+      bool running = playing ? (playingCount > 0) : session.IsPreviewing();
+      bool held = playing ? (liveCount > 0 && playingCount == 0) : session.IsPaused();
+      bool canStart = playing ? (liveCount > 0) : (animations.length() > 0);
       bool acted = false;
 
       TweenyEditorStyle::BeginButtonRow();
@@ -169,7 +198,7 @@ namespace Tweeny
       GUI::EndDisabled();
 
       TweenyEditorStyle::JoinNext();
-      GUI::BeginDisabled(!playing || Tweeny::TotalActiveTweens() == 0);
+      GUI::BeginDisabled(!playing || liveCount == 0);
       if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Trash, size, false, "Kill every tween"))
       {
         Tweeny::KillAll(false);
@@ -207,11 +236,11 @@ namespace Tweeny
 
       if (playing)
       {
-        GUI::BeginDisabled(Tweeny::TotalActiveTweens() == 0);
+        GUI::BeginDisabled(liveTweens is null || liveTweens.length() == 0);
         GUI::SetCursorAtStandardFieldPosition();
         if (GUI::Button(CometEditor::RawIcon::Eye + "  Drive every live tween by hand"))
         {
-          session.PlayLive(Tweeny::AllTweens());
+          session.PlayLive(liveTweens);
         }
         GUI::Tooltip("Takes the running tweens off the game clock and onto this window's.");
         GUI::EndDisabled();
@@ -334,9 +363,13 @@ namespace Tweeny
       TweenyEditorStyle::ControlsColumnWidth(3, GUI::GetFrameHeight()));
       GUI::TableHeadersRow();
 
-      for (uint i = 0; i < animations.length(); i++)
+      CometEditor::GUI::ListClipper clipper(int(animations.length()), RowHeight());
+      while (clipper.Build())
       {
-        DrawAnimationRow(int(i), animations[i], animationOwners[i]);
+        for (int i = clipper.GetStartIndex(); i <= clipper.GetLastIndex(); i++)
+        {
+          DrawAnimationRow(i, animations[uint(i)], animationOwners[uint(i)]);
+        }
       }
 
       GUI::EndTable();
@@ -469,12 +502,21 @@ namespace Tweeny
 
     // ---- the live tween list -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Height of one table row, which is what a clipper needs to know to skip the rows off screen.
+    /// </summary>
+    /// <returns>Returns the height in unscaled units.</returns>
+    private float RowHeight()
+    {
+      return GUI::GetFrameHeight() + GUI::GetStyleVarVector(GUI::StyleVar::CellPadding).y * 2.0f;
+    }
+
     private void DrawTweenTable()
     {
       GUI::SeparatorText("Active tweens");
 
-      array<ITween@>@ tweens = Tweeny::AllTweens();
-      if (tweens.length() == 0)
+      array<ITween@>@ tweens = liveTweens;
+      if (tweens is null || tweens.length() == 0)
       {
         GUI::TextDisabled("Nothing is tweening right now.");
         return;
@@ -500,14 +542,18 @@ namespace Tweeny
       TweenyEditorStyle::ControlsColumnWidth(4, GUI::GetFrameHeight()));
       GUI::TableHeadersRow();
 
-      for (uint i = 0; i < tweens.length(); i++)
+      CometEditor::GUI::ListClipper clipper(int(tweens.length()), RowHeight());
+      while (clipper.Build())
       {
-        ITween@ tween = tweens[i];
-        if (tween is null)
+        for (int i = clipper.GetStartIndex(); i <= clipper.GetLastIndex(); i++)
         {
-          continue;
+          ITween@ tween = tweens[uint(i)];
+          if (tween is null)
+          {
+            continue;
+          }
+          DrawRow(i, tween);
         }
-        DrawRow(int(i), tween);
       }
 
       GUI::EndTable();

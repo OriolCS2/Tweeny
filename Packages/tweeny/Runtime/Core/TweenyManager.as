@@ -14,10 +14,24 @@ namespace Tweeny
     /// </summary>
     class TweenyManager
     {
-        private array<ITween@> tweens;
+        /// One list per update phase, rather than one list filtered on every tick.
+        ///
+        /// A frame drives Update, PostUpdate and then the fixed step zero to eight times, and every one of
+        /// those used to walk every tween alive just to find the few belonging to that phase. With hundreds
+        /// of tweens that is most of the work, and it feeds back on itself: a slow frame accumulates more
+        /// fixed steps, each of which walks the whole list again and slows the frame further.
+        private array<ITween@> normalTweens;
+        private array<ITween@> lateTweens;
+        private array<ITween@> fixedTweens;
+        private array<ITween@> manualTweens;
+
         private array<TweenLink@> links;
         private bool ticking = false;
         private bool needsSweep = false;
+        private bool needsRebalance = false;
+
+        /// How many update phases there are, and so how many lists a full walk visits.
+        private int BUCKET_COUNT = 4;
 
         /// <summary>Global multiplier applied to every scaled tween.</summary>
         float globalTimeScale = 1.0f;
@@ -50,7 +64,60 @@ namespace Tweeny
             if (tween is null) {
                 return;
             }
-            tweens.insertLast(tween);
+            BucketFor(tween.GetUpdateType()).insertLast(tween);
+        }
+
+        /// <summary>
+        /// Moves a tween to the list of the phase it now belongs to.
+        ///
+        /// Called when a tween's update phase is changed after it was registered, which is the usual case:
+        /// a tween is created on the default phase and SetUpdate is chained onto it a moment later.
+        /// </summary>
+        /// <param name="tween">The tween whose phase changed.</param>
+        /// <param name="from">The phase it was registered under.</param>
+        void Rebucket(ITween@ tween, UpdateType from)
+        {
+            if (tween is null || tween.GetUpdateType() == from) {
+                return;
+            }
+            array<ITween@>@ old = BucketFor(from);
+            for (uint i = 0; i < old.length(); i++) {
+                if (old[i] is tween) {
+                    uint last = old.length() - 1;
+                    if (i != last) {
+                        @old[i] = old[last];
+                    }
+                    old.removeLast();
+                    BucketFor(tween.GetUpdateType()).insertLast(tween);
+                    return;
+                }
+            }
+        }
+
+        /// <summary>The list a phase's tweens live in.</summary>
+        /// <param name="phase">The update phase.</param>
+        /// <returns>Returns the list. Never null.</returns>
+        private array<ITween@>@ BucketFor(UpdateType phase)
+        {
+            switch (phase) {
+            case UpdateType::Late:   return lateTweens;
+            case UpdateType::Fixed:  return fixedTweens;
+            case UpdateType::Manual: return manualTweens;
+            }
+            return normalTweens;
+        }
+
+        /// <summary>The list at one index, for walks that have to visit every phase.</summary>
+        /// <param name="index">The index, from zero to BUCKET_COUNT minus one.</param>
+        /// <returns>Returns the list. Never null.</returns>
+        private array<ITween@>@ BucketAt(int index)
+        {
+            switch (index) {
+            case 1: return lateTweens;
+            case 2: return fixedTweens;
+            case 3: return manualTweens;
+            }
+            return normalTweens;
         }
 
         /// <summary>
@@ -72,9 +139,10 @@ namespace Tweeny
             EvaluateLinks();
 
             ticking = true;
-            uint count = tweens.length();
+            array<ITween@>@ bucket = BucketFor(phase);
+            uint count = bucket.length();
             for (uint i = 0; i < count; i++) {
-                ITween@ tween = tweens[i];
+                ITween@ tween = bucket[i];
                 if (tween is null) {
                     continue;
                 }
@@ -82,7 +150,11 @@ namespace Tweeny
                     needsSweep = true;
                     continue;
                 }
-                if (tween.GetUpdateType() != phase || tween.IsSequenced()) {
+                if (tween.GetUpdateType() != phase) {
+                    needsRebalance = true;
+                    continue;
+                }
+                if (tween.IsSequenced()) {
                     continue;
                 }
                 if (validateTargets && HasLostTarget(tween)) {
@@ -97,8 +169,40 @@ namespace Tweeny
             }
             ticking = false;
 
+            if (needsRebalance) {
+                Rebalance();
+            }
             if (needsSweep) {
                 Sweep();
+            }
+        }
+
+        /// <summary>
+        /// Puts back into the right list any tween that changed phase without the manager being told.
+        ///
+        /// Every route that changes a tween's phase notifies the manager, but this exists so that a route
+        /// added later and missed here costs a frame of delay rather than a tween that is filed under a
+        /// phase nobody drives and so never moves again.
+        /// </summary>
+        private void Rebalance()
+        {
+            needsRebalance = false;
+            for (int b = 0; b < BUCKET_COUNT; b++) {
+                array<ITween@>@ bucket = BucketAt(b);
+                uint i = 0;
+                while (i < bucket.length()) {
+                    ITween@ tween = bucket[i];
+                    if (tween !is null && int(tween.GetUpdateType()) != b) {
+                        uint last = bucket.length() - 1;
+                        if (i != last) {
+                            @bucket[i] = bucket[last];
+                        }
+                        bucket.removeLast();
+                        BucketFor(tween.GetUpdateType()).insertLast(tween);
+                        continue;
+                    }
+                    i++;
+                }
             }
         }
 
@@ -123,21 +227,24 @@ namespace Tweeny
         void Sweep()
         {
             needsSweep = false;
-            uint i = 0;
-            while (i < tweens.length()) {
-                ITween@ tween = tweens[i];
-                if (tween is null || !tween.IsActive()) {
-                    if (tween !is null) {
-                        tween.ReleaseReferences();
+            for (int b = 0; b < BUCKET_COUNT; b++) {
+                array<ITween@>@ bucket = BucketAt(b);
+                uint i = 0;
+                while (i < bucket.length()) {
+                    ITween@ tween = bucket[i];
+                    if (tween is null || !tween.IsActive()) {
+                        if (tween !is null) {
+                            tween.ReleaseReferences();
+                        }
+                        uint last = bucket.length() - 1;
+                        if (i != last) {
+                            @bucket[i] = bucket[last];
+                        }
+                        bucket.removeLast();
+                        continue;
                     }
-                    uint last = tweens.length() - 1;
-                    if (i != last) {
-                        @tweens[i] = tweens[last];
-                    }
-                    tweens.removeLast();
-                    continue;
+                    i++;
                 }
-                i++;
             }
         }
 
@@ -191,9 +298,12 @@ namespace Tweeny
         int TotalActiveTweens() const
         {
             int total = 0;
-            for (uint i = 0; i < tweens.length(); i++) {
-                if (tweens[i] !is null && tweens[i].IsActive()) {
-                    total++;
+            for (int b = 0; b < BUCKET_COUNT; b++) {
+                array<ITween@>@ bucket = BucketAt(b);
+                for (uint i = 0; i < bucket.length(); i++) {
+                    if (bucket[i] !is null && bucket[i].IsActive()) {
+                        total++;
+                    }
                 }
             }
             return total;
@@ -204,9 +314,12 @@ namespace Tweeny
         int TotalPlayingTweens() const
         {
             int total = 0;
-            for (uint i = 0; i < tweens.length(); i++) {
-                if (tweens[i] !is null && tweens[i].IsActive() && tweens[i].IsPlaying()) {
-                    total++;
+            for (int b = 0; b < BUCKET_COUNT; b++) {
+                array<ITween@>@ bucket = BucketAt(b);
+                for (uint i = 0; i < bucket.length(); i++) {
+                    if (bucket[i] !is null && bucket[i].IsActive() && bucket[i].IsPlaying()) {
+                        total++;
+                    }
                 }
             }
             return total;
@@ -225,16 +338,19 @@ namespace Tweeny
             bool playingOnly = false)
         {
             array<ITween@>@ result = array<ITween@>();
-            for (uint i = 0; i < tweens.length(); i++) {
-                ITween@ tween = tweens[i];
-                if (tween is null || !tween.IsActive()) {
-                    continue;
-                }
-                if (playingOnly && !tween.IsPlaying()) {
-                    continue;
-                }
-                if (Matches(tween, filter, target, stringId, intId)) {
-                    result.insertLast(tween);
+            for (int b = 0; b < BUCKET_COUNT; b++) {
+                array<ITween@>@ bucket = BucketAt(b);
+                for (uint i = 0; i < bucket.length(); i++) {
+                    ITween@ tween = bucket[i];
+                    if (tween is null || !tween.IsActive()) {
+                        continue;
+                    }
+                    if (playingOnly && !tween.IsPlaying()) {
+                        continue;
+                    }
+                    if (Matches(tween, filter, target, stringId, intId)) {
+                        result.insertLast(tween);
+                    }
                 }
             }
             return result;
@@ -271,10 +387,13 @@ namespace Tweeny
         int Clear(bool complete = false)
         {
             int killed = 0;
-            for (uint i = 0; i < tweens.length(); i++) {
-                if (tweens[i] !is null && tweens[i].IsActive()) {
-                    tweens[i].Kill(complete);
-                    killed++;
+            for (int b = 0; b < BUCKET_COUNT; b++) {
+                array<ITween@>@ bucket = BucketAt(b);
+                for (uint i = 0; i < bucket.length(); i++) {
+                    if (bucket[i] !is null && bucket[i].IsActive()) {
+                        bucket[i].Kill(complete);
+                        killed++;
+                    }
                 }
             }
             Sweep();

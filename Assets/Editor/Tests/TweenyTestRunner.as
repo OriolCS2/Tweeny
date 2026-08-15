@@ -20,6 +20,21 @@ class TweenyTestRunner : EditorBehaviour
         RunAll();
     }
 
+    /// <summary>
+    /// Times the hot path and writes the numbers to Library/TweenyPerfProbe.txt.
+    ///
+    /// Kept off the automatic run because it is slow by design -- it drives four hundred tweens through
+    /// hundreds of iterations several times over, which is a minute of every script compile in a debug
+    /// build. Run it by hand when a performance change needs proving.
+    /// </summary>
+    [MainMenuItem("Tweeny/Run Perf Probe")] void RunPerfProbeMenuItem()
+    {
+        TweenyTestContext context;
+        TweenyTests::RunPerfProbe(context);
+        FileSystem::Save("Library/TweenyPerfProbeRun.txt", context.Report());
+        Debug::Log("[Tweeny perf] wrote Library/TweenyPerfProbe.txt");
+    }
+
     private void RunAll()
     {
         TweenyTestContext context;

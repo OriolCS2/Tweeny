@@ -699,10 +699,23 @@ namespace Tweeny
             autoKill = value;
         }
 
+        /// <summary>
+        /// Moves the tween to another update phase.
+        ///
+        /// The manager keeps one list per phase, so it has to be told: a tween is registered on the default
+        /// phase when it is created and this is usually chained on straight afterwards, which would
+        /// otherwise leave it filed under a phase it no longer belongs to and never ticked.
+        /// </summary>
+        /// <param name="kind">The phase to move to.</param>
+        /// <param name="independent">Whether it ignores the game time scale.</param>
         void CoreSetUpdate(UpdateType kind, bool independent)
         {
+            UpdateType previous = updateType;
             updateType = kind;
             independentUpdate = independent;
+            if (previous != kind) {
+                Tweeny::Manager().Rebucket(cast<ITween@>(this), previous);
+            }
         }
 
         void CoreSetStringId(const string&in value)
@@ -745,7 +758,11 @@ namespace Tweeny
         /// </summary>
         void PrepareForPreview()
         {
+            UpdateType previousPhase = updateType;
             updateType = UpdateType::Manual;
+            if (previousPhase != UpdateType::Manual) {
+                Tweeny::Manager().Rebucket(cast<ITween@>(this), previousPhase);
+            }
             independentUpdate = true;
             autoKill = false;
             @onStart = null;
@@ -834,7 +851,11 @@ namespace Tweeny
             easePeriod = period;
             autoKill = killOnComplete;
             loopType = defaultLoopType;
+            UpdateType previousPhase = updateType;
             updateType = defaultUpdateType;
+            if (previousPhase != defaultUpdateType) {
+                Tweeny::Manager().Rebucket(cast<ITween@>(this), previousPhase);
+            }
             independentUpdate = independent;
         }
     }
