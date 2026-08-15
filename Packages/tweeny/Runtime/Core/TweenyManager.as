@@ -55,6 +55,11 @@ namespace Tweeny
 
         /// <summary>
         /// Advances every tween bound to one update phase.
+        ///
+        /// A tween whose target has gone is killed here rather than left to run. Its guards already refuse
+        /// to write, so it would do no damage, but it would stay in the list being ticked for as long as it
+        /// could not finish on its own -- forever for an endless one -- holding the dead target's script
+        /// object alive with it. Killing lets the sweep drop the references for good.
         /// </summary>
         /// <param name="phase">The phase being driven.</param>
         /// <param name="deltaTime">Scaled seconds since the last tick of this phase.</param>
@@ -80,6 +85,11 @@ namespace Tweeny
                 if (tween.GetUpdateType() != phase || tween.IsSequenced()) {
                     continue;
                 }
+                if (validateTargets && HasLostTarget(tween)) {
+                    tween.Kill(false);
+                    needsSweep = true;
+                    continue;
+                }
                 if (tween.TweenTick(scaled, unscaled)) {
                     tween.Kill(false);
                     needsSweep = true;
@@ -90,6 +100,21 @@ namespace Tweeny
             if (needsSweep) {
                 Sweep();
             }
+        }
+
+        /// <summary>
+        /// Whether a tween was bound to something that no longer exists.
+        ///
+        /// Only tweens given a target are judged. A tween over a plain getter and setter -- a number in a
+        /// script, a field on an object Tweeny never sees -- has nothing to outlive, so the absence of a
+        /// target means "nothing to check" rather than "target gone".
+        /// </summary>
+        /// <param name="tween">The tween to check.</param>
+        /// <returns>Returns true when it had a target and that target is gone.</returns>
+        private bool HasLostTarget(ITween@ tween)
+        {
+            Object@ target = tween.GetTarget();
+            return target !is null && !Tweeny::IsAlive(target);
         }
 
         /// <summary>

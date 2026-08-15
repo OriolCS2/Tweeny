@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 using namespace Tweeny;
 
 namespace TweenyTests
@@ -96,10 +96,6 @@ namespace TweenyTests
             ResetManager();
         }
 
-        // Destroying and disabling entities are deferred operations that a SceneManager tick has to pick
-        // up, and outside play mode that tick never runs. So what a link does on destroy and on disable is
-        // verified in the play-mode demo scene instead; here we prove a link on a live entity stays out of
-        // the way and that a link to a missing entity kills the tween immediately.
         t.Case("a link leaves a healthy tween alone");
         {
             Entity@ host = Entity::Create("[link host]");
@@ -133,9 +129,6 @@ namespace TweenyTests
             ResetManager();
         }
 
-        // TweenyAnimation is a script behaviour, and attaching one to an entity from the compile-time
-        // test runner leaves a live script object behind that the next recompile trips over. Its behaviour
-        // is verified in the play-mode demo scene, where a script behaviour belongs.
 
         ResetManager();
     }

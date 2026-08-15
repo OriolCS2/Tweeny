@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 using namespace Tweeny;
 
 namespace TweenyTests
@@ -64,9 +64,6 @@ namespace TweenyTests
             ResetManager();
         }
 
-        // A From tween used to be put back by completing it, and completing an endless tween is a no-op --
-        // so an animation set to play From and loop forever was moved to its start value at init and then
-        // left there. Nothing said so; the scene was simply wrong afterwards.
         t.Case("a From tween that loops forever still restores");
         {
             FloatProbe probe(12.0f);

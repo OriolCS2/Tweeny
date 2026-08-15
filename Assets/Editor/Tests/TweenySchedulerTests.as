@@ -301,6 +301,38 @@ namespace TweenyTests
             t.CheckEqualInt(Tweeny::TotalActiveTweens(), 0, "and they were all swept when they finished");
         }
 
+        t.Case("target validation leaves a tween that never had a target alone");
+        {
+            ResetManager();
+            Tweeny::Manager().validateTargets = true;
+
+            FloatProbe probe(0.0f);
+            TweenFloat@ tween = Tweeny::To(probe.Getter(), probe.Setter(), 10.0f, 1.0f);
+            tween.SetEase(Ease::Linear).SetUpdate(UpdateType::Manual);
+
+            t.Check(tween.GetTarget() is null, "a tween over a plain getter and setter has no target");
+            Tweeny::ManualUpdate(0.5f, 0.5f);
+            t.Check(tween.IsActive(), "and having no target is not treated as having lost one");
+            t.CheckApprox(probe.value, 5.0f, "so it advanced normally");
+            ResetManager();
+        }
+
+        t.Case("target validation can be turned off");
+        {
+            ResetManager();
+            Tweeny::Manager().validateTargets = false;
+
+            FloatProbe probe(0.0f);
+            TweenFloat@ tween = Tweeny::To(probe.Getter(), probe.Setter(), 10.0f, 1.0f);
+            tween.SetEase(Ease::Linear).SetUpdate(UpdateType::Manual);
+            Tweeny::ManualUpdate(0.5f, 0.5f);
+            t.Check(tween.IsActive(), "the tween still runs with the check off");
+            t.CheckApprox(probe.value, 5.0f, "and still advances");
+
+            Tweeny::Manager().validateTargets = true;
+            ResetManager();
+        }
+
         ResetManager();
     }
 }

@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 
 namespace Tweeny
 {
@@ -260,8 +260,6 @@ namespace Tweeny
             hasGivenFromValue = true;
             givenFromValue = from;
             if (setImmediately) {
-                // Startup captures the target's current value as the tween's END and writes the from
-                // value itself, so it has to run before anything touches the target.
                 ForceInit();
             }
             return this;

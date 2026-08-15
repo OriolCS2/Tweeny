@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 
 namespace Tweeny
 {
@@ -59,9 +59,19 @@ namespace Tweeny
     {
         private array<TweenyPreviewEntry@> entries;
         private bool paused = false;
+        private bool inPlayMode = false;
         private float elapsed = 0.0f;
         private float speed = 1.0f;
-        private float lastAdvanceTime = 0.0f;
+
+        /// <summary>
+        /// The frame this session last advanced on, or -1 when it has not advanced yet.
+        ///
+        /// A frame number rather than a timestamp, because the only clock the scripting API offers belongs
+        /// to play mode: entering play restarts it at zero, leaving play never restarts it, and pausing
+        /// leaves it frozen with nothing on the stop path to lift the pause. A preview timed from it works
+        /// until the first play cycle and then never moves again.
+        /// </summary>
+        private int64 lastAdvanceFrame = -1;
 
         // ---- state ------------------------------------------------------------------------------------
 
@@ -95,6 +105,29 @@ namespace Tweeny
         bool IsPreviewing(TweenyAnimation@ animation) const
         {
             return IndexOf(animation) >= 0;
+        }
+
+        /// <summary>
+        /// How far through its current loop the preview of one component is.
+        ///
+        /// It tracks the loop rather than the whole run because against a full duration a looping animation
+        /// barely creeps and an endless one never moves at all, while against the loop it sweeps and starts
+        /// over each cycle, which is what the animation is actually doing.
+        /// </summary>
+        /// <param name="animation">The component to ask about.</param>
+        /// <returns>Returns a fraction from 0 to 1, and 0 when that component is not previewing.</returns>
+        float GetProgress(TweenyAnimation@ animation) const
+        {
+            int at = IndexOf(animation);
+            if (at < 0) {
+                return 0.0f;
+            }
+            ITween@ tween = entries[uint(at)].tween;
+            if (tween is null || !tween.IsActive()) {
+                return 0.0f;
+            }
+            float duration = tween.GetDuration();
+            return duration <= 0.0f ? 0.0f : tween.GetPosition() / duration;
         }
 
         /// <summary>
@@ -224,6 +257,26 @@ namespace Tweeny
             }
         }
 
+        /// <summary>
+        /// Tells the session whether the game is running, and ends the preview whenever that changes.
+        ///
+        /// A preview is an edit-mode thing. Left alone it survives the switch into play mode, where it goes
+        /// on hand-driving tweens built against a scene that no longer exists -- which is how an animation
+        /// carried on writing to a target that had since been taken off the component.
+        ///
+        /// The session remembers the mode itself so that every view can just report what it sees each frame
+        /// without any of them having to work out whether the change has already been dealt with.
+        /// </summary>
+        /// <param name="playing">Whether the editor is in play mode.</param>
+        void SetPlayMode(bool playing)
+        {
+            if (playing == inPlayMode) {
+                return;
+            }
+            inPlayMode = playing;
+            Stop();
+        }
+
         /// <summary>Ends the preview and puts every target back where it was.</summary>
         void Stop()
         {
@@ -275,11 +328,15 @@ namespace Tweeny
         // ---- the clock --------------------------------------------------------------------------------
 
         /// <summary>
-        /// Moves the preview on by one frame of editor time.
+        /// Moves the preview on by one frame.
         ///
-        /// Every view calls this, and the second call within a frame does nothing: the clock has not moved,
-        /// so there is nothing to advance. That is what stops a preview running at double speed when two
-        /// panels are open on it.
+        /// Every view calls this, and the second call within a frame does nothing: the frame number has not
+        /// changed, so there is nothing left to advance. That is what stops a preview running at double
+        /// speed when two panels are open on it.
+        ///
+        /// The step comes from the unscaled frame delta, which keeps running whatever play mode is doing,
+        /// and it is clamped because an editor only draws when asked to -- a long gap between two frames
+        /// would otherwise make the preview leap instead of move.
         /// </summary>
         /// <returns>Returns true when something actually moved, so the caller knows to redraw.</returns>
         bool Advance()
@@ -287,30 +344,30 @@ namespace Tweeny
             Forget();
 
             if (entries.length() == 0) {
-                lastAdvanceTime = 0.0f;
+                lastAdvanceFrame = -1;
                 return false;
             }
 
-            float now = Time::GetUnscaledGameTime();
-            if (now == lastAdvanceTime) {
+            int64 frame = Time::GetFramesSinceStart();
+            if (frame == lastAdvanceFrame) {
                 return false;
             }
-
-            float delta = lastAdvanceTime <= 0.0f ? 0.0f : (now - lastAdvanceTime);
-            lastAdvanceTime = now;
+            lastAdvanceFrame = frame;
 
             if (paused) {
                 return false;
             }
 
-            // An editor only draws when it is asked to, so a long gap between two frames would make the
-            // preview leap instead of move.
+            float delta = Time::GetUnscaledDeltaTime();
             if (delta > 0.25f) {
                 delta = 0.25f;
             }
+            if (delta <= 0.0f) {
+                return false;
+            }
 
             Step(delta);
-            return delta > 0.0f;
+            return true;
         }
 
         /// <summary>
@@ -355,8 +412,6 @@ namespace Tweeny
             }
             Tweeny::RestorePreviewed(entry.tween, true);
 
-            // The component still holds the tween it built. Clearing it stops the component offering a dead
-            // tween to whoever asks next.
             if (entry.source !is null && Object::IsValid(entry.source)) {
                 entry.source.Kill();
             }
@@ -408,7 +463,7 @@ namespace Tweeny
         {
             paused = false;
             elapsed = 0.0f;
-            lastAdvanceTime = 0.0f;
+            lastAdvanceFrame = -1;
         }
     }
 }

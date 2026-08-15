@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 using namespace Tweeny;
 
 namespace TweenyTests
@@ -109,9 +109,6 @@ namespace TweenyTests
 
         t.Case("Incremental sits one cycle ahead exactly on a loop boundary");
         {
-            // Landing precisely on the boundary leaves position clamped to the duration while the loop has
-            // already been counted, so the value reads one increment high for that single frame. The next
-            // tick corrects it, and pinning both halves here stops anyone "fixing" the transient.
             FloatProbe probe(0.0f);
             TweenFloat@ tween = MakeFloatTween(probe, 10.0f, 1.0f);
             tween.SetLoops(3, LoopType::Incremental);
@@ -165,8 +162,6 @@ namespace TweenyTests
             TweenFloat@ tween = MakeFloatTween(probe, 10.0f, 1.0f);
             tween.SetLoops(4, LoopType::Restart);
             tween.OnStepComplete(TweenCallback(recorder.OnStepComplete));
-            // Deliberately not stepping by exactly the loop duration: landing on the boundary parks the
-            // position at the duration, which costs an extra tick per cycle. That is covered separately.
             Advance(tween, 0.5f, 8);
             t.CheckEqualInt(recorder.steps, 4, "four loops produced four step callbacks");
         }

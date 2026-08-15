@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 using namespace Tweeny;
 
 namespace TweenyTests
@@ -67,8 +67,6 @@ namespace TweenyTests
             session.Step(2.0f);
             t.CheckApprox(probe.value, moved, "and nothing moved while it was paused");
 
-            // The second press is the one that used to do nothing, which left no way back other than
-            // stopping the preview outright.
             session.TogglePause();
             t.Check(!session.IsPaused(), "pressing pause again released it");
             session.Step(1.0f);
@@ -141,10 +139,6 @@ namespace TweenyTests
             ResetManager();
         }
 
-        // This is the property that stopping a preview rests on, and the one the old window broke. Pressing
-        // play on something already previewing must reuse the tween that holds the captured value. The
-        // window used to rebuild it instead, which captured the displaced position as the original -- so
-        // stopping put the object back where the preview had dragged it to, not where the user left it.
         t.Case("playing again never re-captures the value to restore");
         {
             TweenyPreviewSession@ session = Tweeny::PreviewSession();
@@ -167,6 +161,32 @@ namespace TweenyTests
 
             session.Stop();
             t.CheckApprox(probe.value, 4.0f, "and stopping still found the value the target began with");
+            ResetManager();
+        }
+
+        t.Case("switching in or out of play mode ends the preview");
+        {
+            TweenyPreviewSession@ session = Tweeny::PreviewSession();
+            session.SetPlayMode(false);
+
+            FloatProbe probe(6.0f);
+            TweenFloat@ tween = Tweeny::To(probe.Getter(), probe.Setter(), 60.0f, 1.0f);
+            tween.SetEase(Ease::Linear);
+
+            array<ITween@> live;
+            live.insertLast(tween);
+            session.PlayLive(live);
+            session.Step(0.4f);
+            t.Check(session.IsPreviewing(), "a preview is running in edit mode");
+
+            session.SetPlayMode(true);
+            t.Check(!session.IsPreviewing(), "entering play mode ended it");
+            t.CheckApprox(probe.value, 6.0f, "and put the target back before the game took over");
+
+            session.SetPlayMode(true);
+            t.Check(!session.IsPreviewing(), "being told the same mode again changes nothing");
+
+            session.SetPlayMode(false);
             ResetManager();
         }
 

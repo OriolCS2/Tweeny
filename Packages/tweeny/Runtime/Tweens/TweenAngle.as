@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 
 namespace Tweeny
 {
@@ -71,7 +71,6 @@ namespace Tweeny
             changeValue = endValue - startValue;
 
             if (rotateMode == RotateMode::Fast) {
-                // Wrap the delta into -180..180 so the rotation always takes the short way round.
                 while (changeValue > 180.0f) {
                     changeValue -= 360.0f;
                 }

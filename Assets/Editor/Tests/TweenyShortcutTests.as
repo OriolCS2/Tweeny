@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 using namespace Tweeny;
 
 namespace TweenyTests
@@ -14,8 +14,6 @@ namespace TweenyTests
 
         ResetManager();
 
-        // The test runner fires on script compile, when the editor may have no scene open at all. Making
-        // our own scene gives Entity::Create somewhere to put things and keeps the test self-contained.
         CometEngine::SceneManagement::Scene scene =
             CometEngine::SceneManagement::SceneManager::CreateScene("[Tweeny tests]");
         CometEngine::SceneManagement::SceneManager::SetSceneActive(scene);
@@ -29,7 +27,6 @@ namespace TweenyTests
         Transform@ transform = Transform::Get(host);
         if (transform is null) {
             t.Check(false, "the test entity has a transform");
-                // The entity is left in the throwaway test scene: destroying entities outside play mode is deferred to a SceneManager tick that never happens here.
             return;
         }
 
@@ -214,10 +211,6 @@ namespace TweenyTests
             }
         }
 
-        // A tween whose target has gone is not a hypothetical: a coroutine that survives a scene change, or
-        // a callback firing after the thing it animates was destroyed, both land here. Binding a delegate
-        // straight to a dead handle takes the whole update down, so every shortcut has to survive being
-        // handed nothing at all -- and has to keep returning a real tween, because callers chain onto it.
         t.Case("shortcuts given a null target return a harmless tween instead of dying");
         {
             Transform@ missingTransform = null;
@@ -241,8 +234,6 @@ namespace TweenyTests
             t.Check(Tweeny::PunchPosition(missingTransform, Vector2(1.0f, 0.0f), 0.5f) !is null, "PunchPosition survives it");
             t.Check(Tweeny::ShakePosition(missingTransform, 0.5f) !is null, "ShakePosition survives it");
 
-            // And they all still tick to completion, which is what stops one dead target from wedging the
-            // scheduler for everything else.
             Tweeny::ManualUpdate(2.0f, 2.0f);
             t.Check(true, "and a whole batch of them completes without an exception");
             ResetManager();
@@ -267,7 +258,6 @@ namespace TweenyTests
             }
         }
 
-                // The entity is left in the throwaway test scene: destroying entities outside play mode is deferred to a SceneManager tick that never happens here.
         ResetManager();
     }
 }

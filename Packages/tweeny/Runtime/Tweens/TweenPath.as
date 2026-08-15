@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 
 namespace Tweeny
 {
@@ -64,8 +64,6 @@ namespace Tweeny
             }
             startValue = getter();
             BuildPath();
-            // The path always starts at the target's own position, which is waypoint 0. Starting the
-            // counter there means the move onto the first authored waypoint is announced like any other.
             lastWaypointIndex = 0;
             if (isSpeedBased) {
                 float speed = duration;
@@ -88,7 +86,6 @@ namespace Tweeny
             int waypointIndex = WaypointIndexAt(clamped);
             if (waypointIndex != lastWaypointIndex) {
                 if (onWaypointChange !is null) {
-                    // Fire once for every waypoint crossed, so a big delta never silently skips one.
                     int step = waypointIndex > lastWaypointIndex ? 1 : -1;
                     for (int i = lastWaypointIndex + step; ; i += step) {
                         onWaypointChange(i);
@@ -118,7 +115,6 @@ namespace Tweeny
                     points[i] = startValue + points[i];
                 }
             }
-            // The path always begins wherever the target already is.
             points.insertAt(0, startValue);
             if (closePath && points.length() > 1) {
                 points.insertLast(points[0]);

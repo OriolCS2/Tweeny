@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 using namespace Tweeny;
 
 namespace TweenyTests
@@ -180,7 +180,6 @@ namespace TweenyTests
             path.SetUpdate(UpdateType::Manual);
 
             Tweeny::ManualUpdate(1.0f, 1.0f);
-            // Half the time means half the distance, which is 10 units in: the end of the first leg.
             t.CheckApprox(probe.value.x, 10.0f, "halfway by distance is the first corner", 0.01f);
             t.CheckApprox(probe.value.y, 0.0f, "and not yet climbing", 0.01f);
             Tweeny::ManualUpdate(1.1f, 1.1f);

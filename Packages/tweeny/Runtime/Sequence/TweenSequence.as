@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 
 namespace Tweeny
 {
@@ -37,8 +37,6 @@ namespace Tweeny
 
         TweenSequence()
         {
-            // A sequence eases its whole timeline, and anything other than a straight line would distort
-            // the pacing its children were authored with.
             easeType = Ease::Linear;
             tweenType = TweenType::Sequence;
             duration = 0.0f;
@@ -210,7 +208,6 @@ namespace Tweeny
         bool TweenStartup()
         {
             SortItems();
-            // An empty sequence has nothing to play and would sit around forever.
             return items.length() > 0 || duration > 0.0f;
         }
 
@@ -219,14 +216,9 @@ namespace Tweeny
             float timelinePosition = eased * duration;
             float from = hasPreviousPosition ? previousTimelinePosition : 0.0f;
 
-            // On the very first pass, and again every time a loop wraps, the window has to include its own
-            // start so a callback sitting at position 0 still fires. Afterwards the start stays exclusive,
-            // otherwise a callback on a boundary would fire twice.
             bool inclusiveStart = !hasPreviousPosition;
 
             if (notice == UpdateNotice::RewindStep) {
-                // A loop just wrapped, so every child has to go back to its own start before the new
-                // cycle drives it forward again.
                 RewindChildren();
                 from = 0.0f;
                 inclusiveStart = true;
@@ -241,8 +233,6 @@ namespace Tweeny
 
         private void SortItems()
         {
-            // Insertion sort: the lists are short and it is stable, so slots added at the same position
-            // keep the order they were written in.
             for (uint i = 1; i < items.length(); i++) {
                 SequenceItem@ current = items[i];
                 int j = int(i) - 1;

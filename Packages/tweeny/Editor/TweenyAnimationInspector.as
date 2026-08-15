@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 using namespace CometEditor;
 using namespace Tweeny;
 
@@ -17,120 +17,117 @@ using namespace Tweeny;
 [CustomInspector("Tweeny::TweenyAnimation")]
 class TweenyAnimationInspector : EditorBehaviour
 {
-    void OnCustomInspector(Tweeny::TweenyAnimation@ target)
-    {
-        DrawTransport(target);
-        GUI::ShowAllProperties();
-    }
+	void OnCustomInspector(Tweeny::TweenyAnimation@ target)
+	{
+		DrawTransport(target);
+		GUI::SetCursorPosY(GUI::GetCursorPosY() - 7.0F);
+		GUI::ShowAllProperties();
+	}
 
-    /// <summary>
-    /// Drives the preview and ends it when the user looks away.
-    ///
-    /// This runs every editor tick rather than only while the inspector is on screen, which is what makes
-    /// both halves work: the animation keeps moving, and deselecting the entity puts it back.
-    /// </summary>
-    void Update()
-    {
-        TweenyPreviewSession@ session = Tweeny::PreviewSession();
-        DropDeselected(session);
+	/// <summary>
+	/// Drives the preview and ends it when the user looks away.
+	///
+	/// This runs every editor tick rather than only while the inspector is on screen, which is what makes
+	/// both halves work: the animation keeps moving, and deselecting the entity puts it back.
+	/// </summary>
+	void Update()
+	{
+		TweenyPreviewSession@ session = Tweeny::PreviewSession();
+		session.SetPlayMode(CometEditor::EditorApplication::IsPlaying());
+		DropDeselected(session);
 
-        // The preview moves entities in the world, so the viewports have to be marked stale as well as the
-        // interface. Without it the values change and the scene keeps showing its last image.
-        if (session.Advance()) {
-            CometEditor::EditorApplication::RequestSceneRedraw();
-        }
-    }
+		if (session.Advance())
+		{
+			CometEditor::EditorApplication::RequestSceneRedraw();
+		}
+	}
 
-    /// <summary>
-    /// Ends the previews started here for entities that are no longer selected.
-    ///
-    /// A preview left running once its inspector is off screen is how a scene quietly ends up saved with an
-    /// object halfway through an animation. Previews started from the Tweeny window are left alone, because
-    /// the window is still there showing them.
-    /// </summary>
-    /// <param name="session">The shared session.</param>
-    private void DropDeselected(TweenyPreviewSession@ session)
-    {
-        array<TweenyAnimation@>@ mine = session.GetSources(true);
-        for (uint i = 0; i < mine.length(); i++) {
-            TweenyAnimation@ animation = mine[i];
-            Entity@ owner = animation.entity;
-            if (owner is null || !Object::IsValid(owner) || !CometEditor::Selection::Contains(owner)) {
-                session.StopFor(animation);
-                CometEditor::EditorApplication::RequestSceneRedraw();
-            }
-        }
-    }
+	/// <summary>
+	/// Ends the previews started here for entities that are no longer selected.
+	///
+	/// A preview left running once its inspector is off screen is how a scene quietly ends up saved with an
+	/// object halfway through an animation. Previews started from the Tweeny window are left alone, because
+	/// the window is still there showing them.
+	/// </summary>
+	/// <param name="session">The shared session.</param>
+	private void DropDeselected(TweenyPreviewSession@ session)
+	{
+		array<TweenyAnimation@>@ mine = session.GetSources(true);
+		for (uint i = 0; i < mine.length(); i++)
+		{
+			TweenyAnimation@ animation = mine[i];
+			Entity@ owner = animation.entity;
+			if (owner is null || !Object::IsValid(owner) || !CometEditor::Selection::Contains(owner))
+			{
+				session.StopFor(animation);
+				CometEditor::EditorApplication::RequestSceneRedraw();
+			}
+		}
+	}
 
-    /// <summary>
-    /// The three transport buttons, centred and joined into one control.
-    ///
-    /// They are drawn as a single block rather than as a property row because they act on the component as a
-    /// whole rather than on any one of its fields, and the fields underneath are what the editor's standard
-    /// layout is for.
-    /// </summary>
-    /// <param name="target">The component being inspected.</param>
-    private void DrawTransport(TweenyAnimation@ target)
-    {
-        TweenyPreviewSession@ session = Tweeny::PreviewSession();
-        bool running = session.IsPreviewing(target);
-        bool paused = running && session.IsPaused();
+	/// <summary>
+	/// The three transport buttons, centred and joined into one control.
+	///
+	/// They are drawn as a single block rather than as a property row because they act on the component as a
+	/// whole rather than on any one of its fields, and the fields underneath are what the editor's standard
+	/// layout is for.
+	/// </summary>
+	/// <param name="target">The component being inspected.</param>
+	private void DrawTransport(TweenyAnimation@ target)
+	{
+		TweenyPreviewSession@ session = Tweeny::PreviewSession();
+		bool running = session.IsPreviewing(target);
+		bool paused = running && session.IsPaused();
+		float size = TweenyEditorStyle::BUTTON_SIZE;
+		bool acted = false;
 
-        float size = GUI::GetFrameHeight();
-        Vector2 square = Vector2(size, size);
+		GUI::Spacing();
+		float offset = (GUI::GetContentRegionAvail().x - TweenyEditorStyle::RowWidth(3, size)) * 0.5f;
+		if (offset > 0.0f)
+		{
+			GUI::SetCursorPosX(GUI::GetCursorPosX() + offset);
+		}
 
-        // Joined, so the three read as one control rather than three loose buttons. The spacing has to go
-        // before the width is measured, or the group would be centred as if the gaps were still there.
-        GUI::PushStyleVarVector(int(GUI::StyleVar::ItemSpacing), Vector2(0.0f, 0.0f));
+		TweenyEditorStyle::BeginButtonRow();
 
-        float available = GUI::GetContentRegionAvail().x;
-        float offset = (available - size * 3.0f) * 0.5f;
-        if (offset > 0.0f) {
-            GUI::SetCursorPosX(GUI::GetCursorPosX() + offset);
-        }
+		if (TweenyEditorStyle::RowButton(
+		running ? CometEditor::RawIcon::Redo : CometEditor::RawIcon::Play, size, false,
+		running ? "Play this animation again from the start"
+		: "Preview this animation in the editor"))
+		{
+			session.Play(target, true);
+			acted = true;
+		}
 
-        // Once it is running, the button restarts it, so it shows the replay arrow: pressing play on
-        // something that is already playing has nothing left to mean.
-        if (GUI::Button(running ? CometEditor::RawIcon::Redo : CometEditor::RawIcon::Play, square)) {
-            session.Play(target, true);
-            CometEditor::EditorApplication::RequestSceneRedraw();
-        }
-        GUI::Tooltip(running ? "Play this animation again from the start"
-                             : "Preview this animation in the editor");
+		TweenyEditorStyle::JoinNext();
+		GUI::BeginDisabled(!running);
 
-        GUI::SameLine();
-        GUI::BeginDisabled(!running);
+		if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Pause, size, paused,
+		paused ? "Resume" : "Pause"))
+		{
+			session.TogglePause();
+			acted = true;
+		}
 
-        // Held down while paused, because a pause that leaves the button looking untouched gives no way to
-        // tell a paused preview from a finished one.
-        if (paused) {
-            GUI::PushStyleColor(int(GUI::Col::Button), GUI::GetStyleColor(GUI::Col::ButtonActive));
-        }
-        if (GUI::Button(CometEditor::RawIcon::Pause, square)) {
-            session.TogglePause();
-        }
-        if (paused) {
-            GUI::PopStyleColor();
-        }
-        GUI::Tooltip(paused ? "Resume" : "Pause");
+		TweenyEditorStyle::JoinNext();
+		if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Stop, size, false,
+		"Stop and put everything back"))
+		{
+			session.StopFor(target);
+			acted = true;
+		}
 
-        GUI::SameLine();
-        if (GUI::Button(CometEditor::RawIcon::Stop, square)) {
-            session.StopFor(target);
-            // Stopping writes the original values back, and the viewports would otherwise keep showing the
-            // animated ones until something else happened to make them redraw.
-            CometEditor::EditorApplication::RequestSceneRedraw();
-        }
-        GUI::Tooltip("Stop and put everything back");
+		GUI::EndDisabled();
+		TweenyEditorStyle::EndButtonRow();
 
-        GUI::EndDisabled();
-        GUI::PopStyleVar();
-    }
+		if (acted)
+		{
+			CometEditor::EditorApplication::RequestSceneRedraw();
+		}
+	}
 
-    void OnDestroy()
-    {
-        // Losing this object -- a script recompile, or the editor closing -- would drop the only thing still
-        // pointing at a preview started here, so it is put back now rather than left in the scene.
-        Tweeny::PreviewSession().StopOwned(true);
-    }
+	void OnDestroy()
+	{
+		Tweeny::PreviewSession().StopOwned(true);
+	}
 }

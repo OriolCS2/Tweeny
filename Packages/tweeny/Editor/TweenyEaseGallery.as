@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 using namespace CometEditor;
 using namespace Tweeny;
 
@@ -36,8 +36,6 @@ using namespace Tweeny;
     CometEditor::WindowConfig OnGetWindowConfig()
     {
         CometEditor::WindowConfig config;
-        // Sized to fit on a laptop screen. Without this the window opens as tall as its content wants to
-        // be, which for a list of thirty-eight curves is taller than the display.
         config.initialSize = Vector2i(820, 460);
         config.initialPositionType = CometEditor::WindowConfigPositionType::CENTERED;
         config.iconRaw = CometEditor::RawIcon::ChartLine;
@@ -206,21 +204,25 @@ using namespace Tweeny;
 
     /// <summary>
     /// Exact height of everything drawn below the plot, so the plot can be given the rest.
+    ///
+    /// What sits below it is the motion strip, then one row per control -- always the animate toggle and the
+    /// preview speed, plus one for each parameter the selected curve uses -- then the copy row, and the
+    /// spacings between them.
     /// </summary>
     /// <param name="current">The selected curve, which decides how many parameter rows there are.</param>
     /// <returns>Returns the height in pixels.</returns>
     private float ControlsHeight(Ease current)
     {
-        int rows = 2;                                  // animate, preview speed
+        int rows = 2;
         if (UsesOvershoot(current)) { rows++; }
         if (UsesPeriod(current)) { rows++; }
         if (UsesFlashes(current)) { rows++; }
 
         float spacing = GUI::GetStyleVarVector(GUI::StyleVar::ItemSpacing).y;
-        return GUI::GetFrameHeight()                       // the motion strip
+        return GUI::GetFrameHeight()
             + GUI::GetFrameHeightWithSpacing() * float(rows)
-            + GUI::GetFrameHeightWithSpacing()             // the copy row
-            + spacing * 4.0f;                              // the spacings around them
+            + GUI::GetFrameHeightWithSpacing()
+            + spacing * 4.0f;
     }
 
     /// <summary>
@@ -249,7 +251,6 @@ using namespace Tweeny;
         GUI::DrawRectFilled(topLeft, bottomRight, GUI::GetStyleColor(GUI::Col::FrameBg), 3.0f);
         GUI::DrawRect(topLeft, bottomRight, frame, 3.0f);
 
-        // The 0 and 1 lines sit inside a padded band so a curve that overshoots still fits in the box.
         float pad = height * 0.24f;
         float yZero = bottomRight.y - pad;
         float yOne = topLeft.y + pad;
@@ -319,8 +320,6 @@ using namespace Tweeny;
         speed = GUI::SliderFloat("##speed", speed, 0.1f, 3.0f, edited);
         GUI::EndDisabled();
 
-        // Only Back, Elastic and Flash read any parameters, so only those curves get the rows. A curve that
-        // takes none simply has nothing there.
         if (UsesOvershoot(current)) {
             GUI::StandardFieldName(UsesPeriod(current) ? "Amplitude" : "Overshoot",
                 "How far past the destination the curve reaches.");

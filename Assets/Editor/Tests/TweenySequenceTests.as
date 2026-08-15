@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 using namespace Tweeny;
 
 namespace TweenyTests
@@ -312,8 +312,6 @@ namespace TweenyTests
             TweenSequence@ sequence = Tweeny::Sequence();
             sequence.SetUpdate(UpdateType::Manual);
             sequence.Append(child);
-            // The child is registered with the manager and also owned by the sequence; it must advance
-            // exactly once per tick, not twice.
             Tweeny::ManualUpdate(0.5f, 0.5f);
             t.CheckApprox(a.value, 5.0f, "the child advanced once, not twice");
         }

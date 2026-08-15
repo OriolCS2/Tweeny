@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 
 namespace Tweeny
 {
@@ -75,8 +75,6 @@ namespace Tweeny
                 return;
             }
 
-            // The raw position is what selects the segment; the ease is then applied inside it, so this
-            // deliberately ignores the already-eased value the core hands over.
             float elapsed = position;
             uint index = 0;
             float segmentStart = 0.0f;

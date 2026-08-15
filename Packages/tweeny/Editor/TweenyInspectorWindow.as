@@ -1,4 +1,4 @@
-using namespace CometEngine;
+﻿using namespace CometEngine;
 using namespace CometEditor;
 using namespace Tweeny;
 
@@ -35,15 +35,14 @@ using namespace Tweeny;
   void OnGUI()
   {
     bool playing = CometEditor::EditorApplication::IsPlaying();
+    Tweeny::PreviewSession().SetPlayMode(playing);
     if (!playing)
     {
       CollectAnimations();
     }
 
     DrawHeader(playing);
-    GUI::Spacing();
     DrawPreviewSection(playing);
-    GUI::Spacing();
 
     if (playing)
     {
@@ -54,8 +53,6 @@ using namespace Tweeny;
       DrawAnimationTable();
     }
 
-    // The preview animates entities in the world, so the viewports have to be marked stale as well as
-    // this window. Without it the values change and the scene keeps showing its last image.
     if (Tweeny::PreviewSession().Advance())
     {
       CometEditor::EditorApplication::RequestSceneRedraw();
@@ -64,8 +61,21 @@ using namespace Tweeny;
 
   // ---- header --------------------------------------------------------------------------------------
 
+  /// <summary>
+  /// The window's toolbar: the same four buttons in both modes, right-aligned so the row ends exactly where
+  /// the property widgets below it do.
+  ///
+  /// Out of play mode they drive the preview session; in play mode they drive the tweens the running game
+  /// has made. Killing is the one that only means something in play mode, because out of it Stop already
+  /// ends a preview outright. Anything pressed here changes the world, so the viewports are marked stale --
+  /// otherwise stopping would restore the values and the scene would keep showing the animated ones until
+  /// something else happened to redraw it.
+  /// </summary>
+  /// <param name="playing">Whether the editor is in play mode.</param>
   private void DrawHeader(bool playing)
   {
+    GUI::Spacing();
+    GUI::SetCursorAtStandardFieldPosition();
     GUI::AlignTextToFramePadding();
     if (playing)
     {
@@ -75,13 +85,9 @@ using namespace Tweeny;
       GUI::TextDisabled("(" + Tweeny::TotalPlayingTweens() + " playing)");
     }
 
-    // The bulk controls are right-aligned so their last button ends exactly where the property widgets
-    // below do. SameLine takes an absolute X inside the window, so the group is measured back from that
-    // same right edge rather than forward from the text.
-    float size = GUI::GetFrameHeight();
-    float step = size + GUI::GetStyleVarVector(GUI::StyleVar::ItemSpacing).x;
+    float size = TweenyEditorStyle::BUTTON_SIZE;
     float rightEdge = GUI::GetWindowSize().x - WIDGET_RIGHT_MARGIN;
-    float start = rightEdge - (step * 3.0f + size);
+    float start = rightEdge - TweenyEditorStyle::RowWidth(4, size);
     if (start > GUI::GetCursorPosX())
     {
       GUI::SameLine(start);
@@ -91,23 +97,21 @@ using namespace Tweeny;
       GUI::SameLine();
     }
 
-    // The same three buttons mean the same three things in both modes: out of play mode they drive the
-    // preview session, in play mode they drive the tweens the running game has created. Killing is the
-    // one that only makes sense in play mode, because out of it Stop already ends a preview outright.
     TweenyPreviewSession@ session = Tweeny::PreviewSession();
-    Vector2 square = Vector2(size, size);
 
     bool running = playing ?(Tweeny::TotalPlayingTweens() > 0) : session.IsPreviewing();
     bool held = playing
     ?(Tweeny::TotalActiveTweens() > 0 && Tweeny::TotalPlayingTweens() == 0)
     : session.IsPaused();
-    // Out of play mode there is something to play as soon as the scene has an animation in it, whether
-    // or not anything is running yet. Requiring a live tween is what used to leave these greyed out on a
-    // scene full of animations waiting to be previewed.
     bool canStart = playing ?(Tweeny::TotalActiveTweens() > 0) :(animations.length() > 0);
+    bool acted = false;
+
+    TweenyEditorStyle::BeginButtonRow();
 
     GUI::BeginDisabled(!canStart && !running);
-    if (GUI::Button(running ? CometEditor::RawIcon::Redo : CometEditor::RawIcon::Play, square))
+    if (TweenyEditorStyle::RowButton(
+    running ? CometEditor::RawIcon::Redo : CometEditor::RawIcon::Play, size, false,
+    running ? "Start everything again from the beginning" : "Play everything"))
     {
       if (playing && running)
       {
@@ -125,17 +129,14 @@ using namespace Tweeny;
       {
         session.PlayAll(animations);
       }
+      acted = true;
     }
-    GUI::Tooltip(running ? "Start everything again from the beginning" : "Play everything");
     GUI::EndDisabled();
 
-    GUI::SameLine();
+    TweenyEditorStyle::JoinNext();
     GUI::BeginDisabled(!running && !held);
-    if (held)
-    {
-      GUI::PushStyleColor(int(GUI::Col::Button), GUI::GetStyleColor(GUI::Col::ButtonActive));
-    }
-    if (GUI::Button(CometEditor::RawIcon::Pause, square))
+    if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Pause, size, held,
+    held ? "Resume everything" : "Pause everything"))
     {
       if (playing)
       {
@@ -145,17 +146,14 @@ using namespace Tweeny;
       {
         session.TogglePause();
       }
+      acted = true;
     }
-    if (held)
-    {
-      GUI::PopStyleColor();
-    }
-    GUI::Tooltip(held ? "Resume everything" : "Pause everything");
     GUI::EndDisabled();
 
-    GUI::SameLine();
+    TweenyEditorStyle::JoinNext();
     GUI::BeginDisabled(!running && !held);
-    if (GUI::Button(CometEditor::RawIcon::Stop, square))
+    if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Stop, size, false,
+    playing ? "Rewind everything and pause" : "Stop the preview and put everything back"))
     {
       if (playing)
       {
@@ -165,18 +163,25 @@ using namespace Tweeny;
       {
         session.Stop();
       }
+      acted = true;
     }
-    GUI::Tooltip(playing ? "Rewind everything and pause" : "Stop the preview and put everything back");
     GUI::EndDisabled();
 
-    GUI::SameLine();
+    TweenyEditorStyle::JoinNext();
     GUI::BeginDisabled(!playing || Tweeny::TotalActiveTweens() == 0);
-    if (GUI::Button(CometEditor::RawIcon::Trash, square))
+    if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Trash, size, false, "Kill every tween"))
     {
       Tweeny::KillAll(false);
+      acted = true;
     }
-    GUI::Tooltip("Kill every tween");
     GUI::EndDisabled();
+
+    TweenyEditorStyle::EndButtonRow();
+
+    if (acted)
+    {
+      CometEditor::EditorApplication::RequestSceneRedraw();
+    }
   }
 
   // ---- preview -------------------------------------------------------------------------------------
@@ -188,9 +193,6 @@ using namespace Tweeny;
     TweenyPreviewSession@ session = Tweeny::PreviewSession();
     bool edited = false;
 
-    // One speed, not two. It drives the preview clock and is pushed into Tweeny's global time scale as
-    // well, so the same slider slows down a preview here and the tweens running in play mode -- there is
-    // no second control that only works in one of the two situations.
     GUI::StandardFieldName("Preview speed",
     "Drives the preview here, and Tweeny's global time scale, so it slows the running scene too.");
     GUI::SetCursorAtStandardPropertyWidgetPosition();
@@ -260,8 +262,6 @@ using namespace Tweeny;
       return;
     }
 
-    // GetAll rather than Get: an entity is allowed more than one of these, and Get would quietly show
-    // the first and hide the rest.
     array<TweenyAnimation@>@ here = TweenyAnimation::GetAll(entity);
     if (here !is null)
     {
@@ -316,7 +316,7 @@ using namespace Tweeny;
     int flags = GUI::TableFlags::RowBg | GUI::TableFlags::BordersInnerV
     | GUI::TableFlags::BordersOuter | GUI::TableFlags::ScrollY
     | GUI::TableFlags::Resizable | GUI::TableFlags::SizingStretchProp;
-    if (!GUI::BeginTable("animations", 5, flags))
+    if (!GUI::BeginTable("animations", 6, flags))
     {
       return;
     }
@@ -324,6 +324,7 @@ using namespace Tweeny;
     GUI::TableSetupScrollFreeze(0, 1);
     GUI::TableSetupColumn("Entity", GUI::TableColumnFlags::WidthStretch, 2.0f);
     GUI::TableSetupColumn("Animates", GUI::TableColumnFlags::WidthStretch, 1.4f);
+    GUI::TableSetupColumn("Progress", GUI::TableColumnFlags::WidthStretch, 1.6f);
     GUI::TableSetupColumn("Duration", GUI::TableColumnFlags::WidthFixed, 80.0f);
     GUI::TableSetupColumn("Loops", GUI::TableColumnFlags::WidthFixed, 70.0f);
     GUI::TableSetupColumn("Controls",
@@ -358,6 +359,9 @@ using namespace Tweeny;
     GUI::Text(AnimationTypeName(animation.animationType));
 
     GUI::TableNextColumn();
+    DrawAnimationProgress(animation);
+
+    GUI::TableNextColumn();
     GUI::AlignTextToFramePadding();
     GUI::Text(formatFloat(animation.duration, "", 0, 2) + "s");
 
@@ -372,10 +376,30 @@ using namespace Tweeny;
   }
 
   /// <summary>
+  /// How far through its loop this row's animation is, or an empty bar when it is not previewing.
+  /// </summary>
+  /// <param name="animation">The animation on this row.</param>
+  private void DrawAnimationProgress(TweenyAnimation@ animation)
+  {
+    TweenyPreviewSession@ session = Tweeny::PreviewSession();
+    if (!session.IsPreviewing(animation))
+    {
+      TweenyEditorStyle::ProgressBar(0.0f, "Not previewing");
+      return;
+    }
+
+    float fraction = session.GetProgress(animation);
+    TweenyEditorStyle::ProgressBar(fraction,
+    formatFloat(fraction * animation.duration, "", 0, 2) + "s of "
+    + formatFloat(animation.duration, "", 0, 2) + "s this loop");
+  }
+
+  /// <summary>
   /// The per-row transport, the same three buttons the live tween list carries.
   ///
   /// A row is one animation, so these act on that one alone: they start it, hold it and put it back
-  /// without touching anything else that happens to be previewing.
+  /// without touching anything else that happens to be previewing. They keep the frame height rather than
+  /// the toolbar size, because a taller button would stretch every row of the table.
   /// </summary>
   /// <param name="animation">The animation on this row.</param>
   private void DrawAnimationRowActions(TweenyAnimation@ animation)
@@ -383,39 +407,43 @@ using namespace Tweeny;
     TweenyPreviewSession@ session = Tweeny::PreviewSession();
     bool running = session.IsPreviewing(animation);
     bool held = running && session.IsPaused();
-    Vector2 square = Vector2(GUI::GetFrameHeight(), GUI::GetFrameHeight());
+    float size = GUI::GetFrameHeight();
+    bool acted = false;
 
-    if (GUI::Button(running ? CometEditor::RawIcon::Redo : CometEditor::RawIcon::Play, square))
+    TweenyEditorStyle::BeginButtonRow();
+
+    if (TweenyEditorStyle::RowButton(
+    running ? CometEditor::RawIcon::Redo : CometEditor::RawIcon::Play, size, false,
+    running ? "Play it again from the start" : "Preview this one"))
     {
       session.Play(animation);
+      acted = true;
     }
-    GUI::Tooltip(running ? "Play it again from the start" : "Preview this one");
 
-    GUI::SameLine();
+    TweenyEditorStyle::JoinNext();
     GUI::BeginDisabled(!running);
 
-    if (held)
-    {
-      GUI::PushStyleColor(int(GUI::Col::Button), GUI::GetStyleColor(GUI::Col::ButtonActive));
-    }
-    if (GUI::Button(CometEditor::RawIcon::Pause, square))
+    if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Pause, size, held, held ? "Resume" : "Pause"))
     {
       session.TogglePause();
+      acted = true;
     }
-    if (held)
-    {
-      GUI::PopStyleColor();
-    }
-    GUI::Tooltip(held ? "Resume" : "Pause");
 
-    GUI::SameLine();
-    if (GUI::Button(CometEditor::RawIcon::Stop, square))
+    TweenyEditorStyle::JoinNext();
+    if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Stop, size, false,
+    "Stop this one and put it back"))
     {
       session.StopFor(animation);
+      acted = true;
     }
-    GUI::Tooltip("Stop this one and put it back");
 
     GUI::EndDisabled();
+    TweenyEditorStyle::EndButtonRow();
+
+    if (acted)
+    {
+      CometEditor::EditorApplication::RequestSceneRedraw();
+    }
   }
 
   private string AnimationTypeName(TweenyAnimationType kind)
@@ -463,7 +491,6 @@ using namespace Tweeny;
     GUI::TableSetupColumn("Progress", GUI::TableColumnFlags::WidthStretch, 1.6f);
     GUI::TableSetupColumn("Loops", GUI::TableColumnFlags::WidthFixed, 70.0f);
     GUI::TableSetupColumn("State", GUI::TableColumnFlags::WidthFixed, 80.0f);
-    // Fixed and unreorderable: it carries buttons, and resizing it below their width would clip them.
     GUI::TableSetupColumn("Controls",
     GUI::TableColumnFlags::WidthFixed | GUI::TableColumnFlags::NoResize
     | GUI::TableColumnFlags::NoReorder,
@@ -543,8 +570,6 @@ using namespace Tweeny;
     if (GUI::Selectable(entity.name, false))
     {
       FocusInHierarchy(entity);
-      // Clicking the target picks its row too, so the details below follow what was just clicked
-      // instead of staying on whatever was selected before.
       if (row >= 0)
       {
         selected = row;
@@ -592,39 +617,23 @@ using namespace Tweeny;
     return cast<Entity@>(target);
   }
 
+  /// <summary>
+  /// How far a live tween is through its current loop.
+  ///
+  /// The bar tracks the loop rather than the whole run: against the full duration a looping tween barely
+  /// creeps and an endless one never moves at all, while against the loop it sweeps and starts over each
+  /// cycle, which is what the tween is doing.
+  /// </summary>
+  /// <param name="tween">The tween on this row.</param>
   private void DrawProgress(ITween@ tween)
   {
-    // The bar tracks the CURRENT loop, not the whole run. Against the full duration a looping tween
-    // barely creeps and an endless one never moves at all; against the loop it sweeps and starts over
-    // each cycle, which is what the tween is actually doing.
     float duration = tween.GetDuration();
     float fraction = duration <= 0.0f ? 0.0f : tween.GetPosition() / duration;
-    if (fraction < 0.0f)
-    {
-      fraction = 0.0f;
-    }
-    if (fraction > 1.0f)
-    {
-      fraction = 1.0f;
-    }
-
     float full = tween.GetFullDuration(true);
     float elapsed = tween.GetElapsed(true);
 
-    float width = GUI::GetContentRegionAvail().x;
-    float height = GUI::GetFrameHeight() * 0.55f;
-    Vector2 origin = GUI::GetCursorScreenPos();
-    origin.y += (GUI::GetFrameHeight() - height) * 0.5f;
-    Vector2 far = Vector2(origin.x + width, origin.y + height);
-
-    GUI::DrawRectFilled(origin, far, GUI::GetStyleColor(GUI::Col::FrameBg), 2.0f);
-    if (fraction > 0.0f)
-    {
-      GUI::DrawRectFilled(origin, Vector2(origin.x + width * fraction, far.y),
-      GUI::GetStyleColor(GUI::Col::PlotHistogram), 2.0f);
-    }
-    GUI::Dummy(Vector2(width, GUI::GetFrameHeight()));
-    GUI::Tooltip(formatFloat(tween.GetPosition(), "", 0, 2) + "s of "
+    TweenyEditorStyle::ProgressBar(fraction,
+    formatFloat(tween.GetPosition(), "", 0, 2) + "s of "
     + formatFloat(duration, "", 0, 2) + "s this loop, "
     + formatFloat(elapsed, "", 0, 2) + "s in total"
     + (tween.GetLoops() == -1 ? " (endless)" : " of " + formatFloat(full, "", 0, 2) + "s"));
@@ -646,35 +655,54 @@ using namespace Tweeny;
     tween.IsBackwards() ? "backwards" : "playing");
   }
 
+  /// <summary>
+  /// The per-row transport for a live tween.
+  ///
+  /// Stop here means rewind and pause, which is what stopping an animation means: back to the start and not
+  /// playing. Killing is the separate, destructive one.
+  /// </summary>
+  /// <param name="tween">The tween on this row.</param>
   private void DrawRowActions(ITween@ tween)
   {
-    Vector2 square = Vector2(GUI::GetFrameHeight(), GUI::GetFrameHeight());
+    float size = GUI::GetFrameHeight();
+    bool held = tween.IsActive() && !tween.IsPlaying() && !tween.IsComplete();
+    bool acted = false;
 
-    if (GUI::Button(CometEditor::RawIcon::Play, square))
+    TweenyEditorStyle::BeginButtonRow();
+
+    if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Play, size, false, "Play"))
     {
       tween.Play();
+      acted = true;
     }
-    GUI::Tooltip("Play");
-    GUI::SameLine();
-    if (GUI::Button(CometEditor::RawIcon::Pause, square))
+
+    TweenyEditorStyle::JoinNext();
+    if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Pause, size, held, held ? "Resume" : "Pause"))
     {
-      tween.Pause();
+      tween.TogglePause();
+      acted = true;
     }
-    GUI::Tooltip("Pause");
-    GUI::SameLine();
-    // Stop is rewind-and-pause, which is what stopping an animation means: back to the start, not
-    // playing. Killing is the separate, destructive one.
-    if (GUI::Button(CometEditor::RawIcon::Stop, square))
+
+    TweenyEditorStyle::JoinNext();
+    if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Stop, size, false, "Stop and rewind"))
     {
       tween.Rewind(true);
+      acted = true;
     }
-    GUI::Tooltip("Stop and rewind");
-    GUI::SameLine();
-    if (GUI::Button(CometEditor::RawIcon::Trash, square))
+
+    TweenyEditorStyle::JoinNext();
+    if (TweenyEditorStyle::RowButton(CometEditor::RawIcon::Trash, size, false, "Kill"))
     {
       tween.Kill(false);
+      acted = true;
     }
-    GUI::Tooltip("Kill");
+
+    TweenyEditorStyle::EndButtonRow();
+
+    if (acted)
+    {
+      CometEditor::EditorApplication::RequestSceneRedraw();
+    }
   }
 
   private string NameOf(int index, ITween@ tween)
@@ -747,8 +775,6 @@ using namespace Tweeny;
 
   void OnDestroy()
   {
-    // Only what this window started. A preview running from a component's inspector is still on screen
-    // with its own buttons, so closing this window is no reason to undo it.
     Tweeny::PreviewSession().StopOwned(false);
   }
 }
