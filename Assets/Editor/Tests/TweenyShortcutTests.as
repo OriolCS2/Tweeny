@@ -118,6 +118,27 @@ namespace TweenyTests
             ResetManager();
         }
 
+        t.Case("PunchScale bounces the scale and settles back on it");
+        {
+            transform.localScale = Vector3(2.0f, 2.0f, 1.0f);
+            Tweeny::Kill(transform);
+            Tweeny::PunchScale(transform, Vector2(0.15f, 0.15f), 0.3f).SetUpdate(UpdateType::Manual);
+            float largest = 0.0f;
+            float smallest = 100.0f;
+            for (int i = 0; i < 30; i++) {
+                Tweeny::ManualUpdate(0.01f, 0.01f);
+                largest = Math::Max(largest, transform.localScale.x);
+                smallest = Math::Min(smallest, transform.localScale.x);
+            }
+            Tweeny::ManualUpdate(0.1f, 0.1f);
+            t.Check(largest > 2.05f, "the punch grew the scale");
+            t.Check(smallest > 1.7f, "it never collapsed the scale");
+            t.CheckApprox(transform.localScale.x, 2.0f, "x settled back", 0.001f);
+            t.CheckApprox(transform.localScale.y, 2.0f, "y settled back", 0.001f);
+            t.CheckApprox(transform.localScale.z, 1.0f, "z was left alone", 0.001f);
+            ResetManager();
+        }
+
         t.Case("PunchPosition returns the transform to where it started");
         {
             transform.position = Vector3(5.0f, 5.0f, 1.0f);
